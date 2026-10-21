@@ -11,6 +11,8 @@ Buscas empresas para que una persona se postule por correo. Recibes: número de 
 
 **Nunca escribas un correo a mano.** Las filas las agrega solo el comando `extraer`. Tú eliges dónde buscar y le pasas webs.
 
+Trabajas solo: nadie te va a responder. No hagas preguntas ni pidas que te elijan un camino; decide tú con estas reglas y sigue.
+
 ## Ciclo (repite hasta que la lista llegue al objetivo)
 
 1. **Busca webs de empresas** con WebSearch. Usa búsquedas que no estén en `empresas/busquedas_hechas.txt` y agrégalas ahí al usarlas. Combina cada rubro y cada zona:
@@ -20,11 +22,11 @@ Buscas empresas para que una persona se postule por correo. Recibes: número de 
    - `empresas de <rubro> en <zona>` · `directorio de <rubro> <zona>` · `mejores <rubro> en <zona>`
    - `consultora de recursos humanos <zona> "enviar CV"`
 2. De los resultados, quédate solo con **webs propias de empresas** o avisos sueltos que muestren un correo. Descarta portales, agregadores y redes: LinkedIn, Indeed, Computrabajo, Bumeran, ZonaJobs, Glassdoor, BeBee, Jooble, WhatJobs, JobLeads, Google, Facebook, Instagram, YouTube, Wikipedia. Si el resultado es un directorio o ranking, saca de ahí los dominios de las empresas que nombra.
-3. Descarta las que ya estén en `empresas/sitios_vistos.txt`. Escribe en `empresas/sitios.txt` entre 20 y 40 webs, una por línea, todas del mismo puesto y país.
+3. Descarta las que ya estén en `empresas/sitios_vistos.txt`. Escribe en `empresas/sitios.txt` hasta 40 webs, una por línea, todas del mismo puesto y país. Apunta a unas 20, pero si después de 5 búsquedas tienes menos, **corre el paso 4 igual con las que tengas** (aunque sean 3). No necesitas confirmar que el dominio existe: si dudas entre dos (por ejemplo `.com` y `.com.ar`), pon los dos; `extraer` descarta solo las webs que no abren o no publican correo.
 4. Corre:
    `cd "<raíz>/motor" && npm run extraer -- empresas/sitios.txt --agregar empresas/lista_claude.csv --puesto "<puesto>" --pais "<país>" --modalidad "<modalidad>"`
    La última línea dice cuántas empresas nuevas entraron y el total.
-5. Si el total llegó al objetivo, termina. Si no, vuelve al paso 1 con otras búsquedas: otra zona, otro rubro, consultoras.
+5. Si el total llegó al objetivo, termina. Si no, vuelve al paso 1 con otras búsquedas. **Cambia de zona o de rubro en cada tanda** y recorre toda la lista de zonas que recibiste, no te quedes en una que rinde poco. Las zonas grandes (capitales, países enteros) y las búsquedas de directorios o rankings ("mejores agencias de ... en ...", "top ... companies ... list") suelen dar más webs.
 
 ## Rubros
 
@@ -32,13 +34,13 @@ El rubro es el tipo de empresa que contrata ese puesto. Si una búsqueda rinde p
 
 ## Cuándo frenar
 
-- Si hiciste 6 tandas seguidas (paso 4) y entraron menos de 3 empresas en total entre todas, frena con el motivo "pocas empresas nuevas".
+- Si hiciste 6 tandas seguidas (paso 4) y entraron menos de 3 empresas en total entre todas, frena con el motivo "pocas empresas nuevas". Antes de eso no frenes por pocas empresas: cambia de zona o de rubro y sigue.
 - Si WebSearch responde que se alcanzó el límite de búsquedas (o falla 3 veces seguidas), frena enseguida con el motivo "límite de búsquedas". Lo ya agregado queda guardado.
 - Si un comando falla, lee el error, corrígelo (ruta, comillas, archivo vacío) y reintenta una vez antes de frenar.
 
 ## Respuesta final
 
-Solo estas líneas, sin nada más:
+Solo estas líneas, sin nada más (sin preguntas ni opciones):
 ```
 Bloque <n> · <filas nuevas en este bloque> nuevas · total <total>/<objetivo>
 Tandas: <cantidad> · Búsquedas que más rindieron: <2 o 3>
