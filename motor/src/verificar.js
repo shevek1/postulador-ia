@@ -89,13 +89,29 @@ function companyName(title, url) {
 
 // One list row per site: an HR-looking email or one on a careers page first (level 2), any other otherwise (level 4).
 const CAREERS = /empleo|trabaj|career|jobs?\b|rrhh|talent|unete|únete|sumate|súmate|postula/i;
-function siteRow(url, site, { puesto = '', pais = '' } = {}) {
+function siteRow(url, site, { puesto = '', pais = '', modalidad = '' } = {}) {
   const found = site.pages.flatMap(p => p.emails.map(email => ({ email, link: p.url,
     hr: HR_FIRST.test(email) || CAREERS.test(decodeURIComponent(new URL(p.url).pathname)) })));
   if (!found.length) return null;
   const best = found.find(f => f.hr) || found[0];
-  return { empresa: companyName(site.title, url), puesto, email: best.email, link: best.link, pais, modalidad: '',
+  return { empresa: companyName(site.title, url), puesto, email: best.email, link: best.link, pais, modalidad,
     nivel: best.hr ? '2' : '4' };
+}
+
+// Minutes per company measured on the test run (25 companies in about 10 minutes), used until there is real data.
+const DEFAULT_MIN_PER_COMPANY = 0.4;
+// Pace from empresas/progreso.csv. Gaps longer than 30 minutes are pauses between sessions and do not count.
+function estimate(log, objetivo) {
+  let minutes = 0, gained = 0;
+  for (let i = 1; i < log.length; i++) {
+    const gap = (Date.parse(log[i].fecha) - Date.parse(log[i - 1].fecha)) / 60000;
+    if (gap > 0 && gap <= 30) { minutes += gap; gained += Number(log[i].total) - Number(log[i - 1].total); }
+  }
+  const total = log.length ? Number(log[log.length - 1].total) : 0;
+  const faltan = Math.max(0, objetivo - total);
+  const medido = gained > 0;
+  const perCompany = medido ? minutes / gained : DEFAULT_MIN_PER_COMPANY;
+  return { total, faltan, medido, minutos: Math.round(faltan * perCompany), bloques: Math.ceil(faltan / 25) };
 }
 
 // Rows whose company or (non-public) domain is not in the list yet.
@@ -189,7 +205,7 @@ async function verificar(file, reader) {
 async function extraer(argv, reader) {
   const flags = {}, args = [];
   for (let i = 0; i < argv.length; i++) {
-    if (/^--(agregar|puesto|pais)$/.test(argv[i])) flags[argv[i].slice(2)] = argv[++i] || '';
+    if (/^--(agregar|puesto|pais|modalidad)$/.test(argv[i])) flags[argv[i].slice(2)] = argv[++i] || '';
     else args.push(argv[i]);
   }
   const rows = [];
@@ -216,12 +232,29 @@ async function extraer(argv, reader) {
     const all = [...existing, ...added];
     core.writeCsv(file, [LIST_COLS, ...all.map(r => LIST_COLS.map(c => r[c] || ''))]);
     fs.appendFileSync(path.join(path.dirname(file), 'sitios_vistos.txt'), urls.join('\n') + '\n');
+    const progress = path.join(path.dirname(file), 'progreso.csv');
+    if (!fs.existsSync(progress)) fs.writeFileSync(progress, 'fecha,nuevas,total\n');
+    fs.appendFileSync(progress, `${new Date().toISOString()},${added.length},${all.length}\n`);
     console.log(`＋ ${added.length} empresas nuevas · total ${all.length} en ${path.relative(core.PATHS.root, file)}`);
   }
 }
 
+// Usage: npm run estimar -- 200   → how long the rest of the search should take at the measured pace.
+function estimar([objetivo]) {
+  const n = Number(objetivo);
+  if (!(n > 0)) throw Error('Uso: npm run estimar -- <cantidad de empresas que querés en total>');
+  const file = path.join(core.PATHS.root, 'empresas', 'progreso.csv');
+  const log = fs.existsSync(file) ? core.csvObjects(fs.readFileSync(file, 'utf8'), ['fecha', 'total']) : [];
+  const e = estimate(log, n);
+  const time = e.minutos >= 60 ? `${Math.floor(e.minutos / 60)} h ${e.minutos % 60} min` : `${e.minutos} min`;
+  if (!e.faltan) return console.log(`Ya hay ${e.total} de ${n}: no falta buscar.`);
+  console.log(`Hay ${e.total} de ${n} · faltan ${e.faltan} (${e.bloques} bloques) · unos ${time}` +
+    (e.medido ? ' al ritmo medido.' : ' (estimado; se ajusta después del primer bloque).'));
+}
+
 async function main() {
   const [first, ...rest] = process.argv.slice(2);
+  if (first === '--estimar') return estimar(rest);
   const reader = pageReader();
   try {
     if (first === '--extraer') await extraer(rest, reader);
@@ -230,5 +263,5 @@ async function main() {
   } finally { await reader.close(); }
 }
 
-module.exports = { extractEmails, decodeCfEmail, contactLinks, verifyRows, companyName, siteRow, addRows };
+module.exports = { extractEmails, decodeCfEmail, contactLinks, verifyRows, companyName, siteRow, addRows, estimate };
 if (require.main === module) main().catch(e => { console.error('✖ ' + e.message); process.exitCode = 1; });

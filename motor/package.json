@@ -10,6 +10,7 @@
     "limpiar": "node src/limpiar.js",
     "verificar": "node src/verificar.js",
     "extraer": "node src/verificar.js --extraer",
+    "estimar": "node src/verificar.js --estimar",
     "generar": "node src/generar.js",
     "mis-cvs": "node src/mis_cvs.js",
     "revisar": "node src/programar.js --revisar",

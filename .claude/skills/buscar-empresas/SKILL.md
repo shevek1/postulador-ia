@@ -52,7 +52,9 @@ Toma el bloque de `prompts/buscar_empresas.md`, reemplaza todo lo que está entr
 
 ## 3B. Si busca Claude acá mismo
 
-Avisa en una línea que gasta uso de su plan (menos que lo normal, porque busca un modelo más liviano) y que puede frenar cuando quiera. Sirve para cualquier rubro.
+Sirve para cualquier rubro. **Antes de arrancar**, corre `npm run estimar -- <total pedido>` (desde `motor/`) y avisa en 2 líneas:
+- Cuánto tarda, con el número que dio (por ejemplo "faltan 108 empresas, 5 bloques, unos 45 min") y que puede dejarla trabajando: sigue sola bloque por bloque y solo le pregunta al final.
+- Que gasta uso de su plan, poco porque busca un modelo más liviano (Haiku); lo ve en la barra de abajo como `5h`. Puede frenar cuando quiera.
 
 **Quién busca.** Cada bloque lo hace el subagente `buscador-empresas` (modelo Haiku): junta webs de empresas, y el comando `extraer` saca los correos y escribe las filas. Tú no buscas ni escribes filas: preparas el pedido y muestras el avance. Así los resultados de búsqueda no llenan esta conversación.
 
@@ -63,13 +65,17 @@ Avisa en una línea que gasta uso de su plan (menos que lo normal, porque busca 
 2. **Por cada bloque**, en orden y de a uno (escriben en el mismo archivo), lanza el subagente con Agent (`subagent_type: "buscador-empresas"`) y este pedido:
    ```
    Bloque <n> de <total de bloques>. Objetivo: que empresas/lista_claude.csv llegue a <n × 25> filas.
+   Raíz del proyecto: <ruta absoluta del proyecto>
    Áreas y rubros: <puesto 1>: <rubros> · <puesto 2>: <rubros>
    Zonas (de cerca a lejos): <zona> (<país>), ...
-   Nivel: <nivel> · Modalidad: <modalidad>
+   Seniority: <junior, semi senior...> · Modalidad: <modalidad>
    ```
-3. Cuando vuelve, muestra una línea: "Bloque 3/8 ✔ 75 empresas". Si el estado es "completo", sigue con el siguiente bloque sin preguntar.
-4. Si vuelve "frenado", di cuántas lleva y propone **una** ampliación concreta (más zonas, otro rubro u otra modalidad) con una sola pregunta. Con la respuesta, actualiza el pedido y relanza ese bloque.
-5. La persona puede pedir frenar en cualquier momento: lo ya guardado queda en `empresas/lista_claude.csv`.
+3. Cuando vuelve, corre `npm run estimar -- <total pedido>` y muestra una línea: "Bloque 3/8 ✔ 75 empresas · faltan unos 50 min". Si el estado es "completo", sigue con el siguiente bloque sin preguntar.
+4. **Sin preguntar en el medio.** Si vuelve "frenado (pocas empresas nuevas)", amplía tú el pedido con lo que todavía no se usó (la zona siguiente, rubros vecinos, consultoras de RRHH, otra modalidad compatible con lo que pidió), dilo en una línea y relanza ese bloque. Si ya no queda nada razonable para ampliar, termina y ve a la sección 4.
+5. Si vuelve "frenado (límite de búsquedas)", la sesión agotó las búsquedas web que permite. No lo relances: di cuántas lleva y que lo retome más tarde con `/buscar-empresas` (sigue desde donde quedó, sin repetir webs). Mientras, puede seguir con la sección 4 con lo que ya hay.
+6. La persona puede pedir frenar en cualquier momento: lo ya guardado queda en `empresas/lista_claude.csv`.
+
+En la lista, la columna `nivel` es el nivel de búsqueda (1 a 4, ver `prompts/buscar_empresas.md`), no el seniority: no la cambies.
 
 ## 4. Cierre
 

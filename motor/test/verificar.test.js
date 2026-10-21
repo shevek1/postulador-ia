@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { extractEmails, decodeCfEmail, contactLinks, verifyRows } = require('../src/verificar');
+const v = require('../src/verificar');
+const { extractEmails, decodeCfEmail, contactLinks, verifyRows } = v;
 
 // Cloudflare email protection: first byte is the XOR key, the rest is the address XORed with it.
 const cf = email => {
@@ -86,4 +87,24 @@ test('siteRow takes the HR email first and marks the level; addRows skips compan
     { empresa: 'Acme SA', email: 'jobs@acme.com' }, { empresa: 'Beta', email: 'cv@beta.com' },
     { empresa: 'Beta Group', email: 'otro@beta.com' }, { empresa: 'Gamma', email: 'yo@gmail.com' }]);
   assert.deepStrictEqual(added.map(r => r.email), ['cv@beta.com', 'yo@gmail.com']);
+});
+
+test('siteRow fills modalidad from the request and keeps nivel as the search level', () => {
+  const site = { title: 'Acme', pages: [{ url: 'https://acme.com/contacto', emails: ['info@acme.com'] }] };
+  const r = v.siteRow('https://acme.com', site, { puesto: 'Dev', pais: 'Argentina', modalidad: 'Remoto' });
+  assert.strictEqual(r.modalidad, 'Remoto');
+  assert.strictEqual(r.nivel, '4');
+});
+
+test('estimate uses the measured pace and skips long pauses between sessions', () => {
+  const t0 = Date.parse('2026-10-21T17:30:00');
+  const min = m => new Date(t0 + m * 60000).toISOString();
+  const log = [[min(0), 0, 32], [min(10), 18, 50], [min(20), 25, 75], [min(26), 17, 92], [min(300), 0, 92]];
+  const e = v.estimate(log.map(([fecha, nuevas, total]) => ({ fecha, nuevas, total })), 200);
+  assert.strictEqual(e.total, 92);
+  assert.strictEqual(e.faltan, 108);
+  assert.strictEqual(e.medido, true);
+  assert.strictEqual(e.minutos, Math.round(108 * 26 / 60));
+  const d = v.estimate([], 100);
+  assert.deepStrictEqual([d.total, d.faltan, d.medido, d.minutos], [0, 100, false, 40]);
 });
