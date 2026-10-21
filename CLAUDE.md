@@ -40,7 +40,9 @@ Como una persona real que cuenta hechos concretos, no como un folleto.
 ```
 npm run mis-cvs                                   # CVs mejorados por área → mi_perfil/cvs_mejorados/
 npm run login -- cuenta1 correo@gmail.com         # conectar una cuenta (abre Chrome)
-npm run limpiar -- empresas/lista.csv             # → empresas/limpias.csv y descartadas.csv
+npm run extraer -- empresas/sitios.txt           # correos publicados en cada web (home + contacto/empleo)
+npm run verificar -- empresas/lista.csv           # → empresas/verificadas.csv y no_verificadas.csv
+npm run limpiar -- empresas/verificadas.csv       # → empresas/limpias.csv y descartadas.csv
 npm run generar                                   # salida/tanda.json → salida/cvs/*.pdf + salida/envio.csv
 npm run revisar -- --fecha DD/MM/AAAA --hora HH:MM [--cuentas a,b]
 npm run programar -- --fecha DD/MM/AAAA --hora HH:MM [--cuentas a,b]

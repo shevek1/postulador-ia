@@ -29,8 +29,8 @@ Llamada 2:
 - **Nivel**: Sin experiencia · Junior · Semi senior · Senior.
 - **Idioma de los avisos**: Solo español · Español e inglés.
 - **¿Dónde buscamos?**:
-  - "ChatGPT (recomendado)": no gasta tu uso de Claude.
-  - "Claude, acá mismo": más cómodo, pero gasta bastante uso de tu plan.
+  - "Claude, acá mismo (recomendado)": busca en la web de cada empresa y solo guarda correos que ve publicados. Gasta uso de tu plan.
+  - "ChatGPT": no gasta tu uso de Claude, pero suele inventar correos. Igual los verifico todos antes de usarlos.
   - "claude.ai en el navegador": igual que ChatGPT, con tu cuenta de Claude.
 
 Si eligió una ciudad, pregunta cuál (abierta).
@@ -48,16 +48,36 @@ Toma el bloque de `prompts/buscar_empresas.md`, reemplaza todo lo que está entr
    3. Cuando llegues a la cantidad, escribe **final**: te da todo en un CSV.
    4. Copia el CSV y pégalo acá (o guárdalo en `empresas/lista_1.csv`).
 3. Cuando lo pegue, guárdalo en `empresas/lista_<n>.csv` (UTF-8, encabezado `empresa,puesto,email,link,pais,modalidad,nivel`; corrige separadores si vino con `|` o `;`). Muestra cuántas filas tiene.
+4. Verifícalo enseguida con `npm run verificar -- empresas/lista_<n>.csv` (ver sección 4). Si faltan muchas, ofrece completar con la búsqueda de 3B.
 
 ## 3B. Si busca Claude acá mismo
 
-Avisa que gasta uso y que puede frenar cuando quiera. Después, por bloques de 25:
-1. Busca con WebSearch siguiendo los niveles del prompt (1: avisos con correo; 2: páginas de empleo con correo; 3: consultoras de RRHH; 4: candidatura espontánea con correo de RRHH publicado).
-2. **Solo correos que veas escritos en la página o en el resultado**, con su link. Si dudas, ábrelo con WebFetch y confirma. Nunca deduzcas una dirección.
-3. Sin repetir empresas (revisa lo ya guardado y `datos/historial.json`).
-4. Agrega el bloque a `empresas/lista_claude.csv` y muestra: "Bloque 3/8 ✔ 75 empresas".
-5. Sigue con el siguiente bloque sin preguntar, salvo que la persona pida frenar.
+Avisa en una línea que gasta uso y que puede frenar cuando quiera. Sirve para cualquier rubro: las búsquedas se arman con sus áreas, puestos y zonas.
+
+**Meta: 25 correos verificados por bloque. No cortes un bloque con menos** salvo que la persona pida frenar o se cumpla el tope del paso 6.
+
+**Dónde están los correos.** Los portales y agregadores (Google Empleos, LinkedIn, Indeed, Computrabajo, Bumeran, ZonaJobs, Glassdoor, BeBee, Jooble, WhatJobs, JobLeads) casi nunca muestran el correo: no los uses como fuente. Los correos están en la web propia de cada empresa ("Trabajá con nosotros", "Empleo", "Contacto") y en algunos avisos que piden el CV por mail.
+
+Por cada bloque:
+
+1. **Junta sitios de empresas** con WebSearch. Rota estas búsquedas con cada área y cada zona (ciudad, provincia, país) del perfil, y no repitas una búsqueda ya hecha:
+   - `"trabaja con nosotros" <rubro> <zona>` · `"trabajá con nosotros" <rubro> <zona>` · `"envianos tu CV" <rubro> <zona>`
+   - `"rrhh@" <rubro> <zona>` · `"cv@" <rubro> <zona>` · `"empleo@" <rubro> <zona>` · `"talento@" <rubro>`
+   - `"enviar CV a" <puesto> <zona>` · `"enviar CV al mail" <puesto>` (avisos con correo)
+   - `empresas de <rubro> en <zona>` · `directorio de empresas de <rubro> <zona>` · `mejores <rubro> en <zona>` (listados, cámaras, rankings, directorios como Sortlist o Clutch)
+   - `consultora de recursos humanos <zona> "enviar CV"` (nivel 3)
+   El rubro es el tipo de empresa que contrata ese puesto: para "atención al cliente" sirven call centers, e-commerce, bancos, prepagas; para "Paid Media", agencias de marketing digital y performance; para "administración", estudios contables, logísticas, pymes. Piensa varios rubros por área.
+2. Guarda en `empresas/sitios.txt` (una URL por línea) solo webs propias de empresas o avisos individuales, sin portales ni redes sociales, y sin las que ya estén en `empresas/sitios_vistos.txt`, en las listas ya guardadas o en `datos/historial.json`. Junta al menos 40 por tanda.
+3. Corre desde `motor/`: `npm run extraer -- empresas/sitios.txt`. Abre cada sitio y sus páginas de contacto y empleo, y lista los correos publicados (primero los de RRHH o empleo). **No uses WebFetch para esto**: este comando gasta mucho menos uso. Después agrega esas URLs a `empresas/sitios_vistos.txt`.
+4. Por empresa elige **un** correo, en este orden: RRHH, empleo, talento o CV; si no hay, el de contacto general (nivel 4). Nunca escribas un correo que no salió en el resultado del comando. El link es la página donde apareció.
+5. Agrega las filas a `empresas/lista_claude.csv` y muestra una línea: "Bloque 3/8 · 18 de 25". Si no llegaste a 25, repite desde el paso 1 con búsquedas nuevas: otras zonas del perfil, otros rubros que contraten esas áreas, consultoras.
+6. Tope: si después de 6 tandas seguidas el bloque no avanza, frena y dile cuántas llevas y qué propones ampliar (más zonas, más áreas o modalidad). Una sola pregunta.
+7. Al completar el bloque, sigue con el siguiente sin preguntar, salvo que la persona pida frenar.
 
 ## 4. Cierre
 
-Corre `npm run limpiar -- empresas/<archivo>.csv` desde `motor/` y muestra el resultado (cuántas quedan y por qué se descartaron las otras). Después sigue con `/programar`.
+Desde `motor/`, corre en orden y muestra el resultado de cada uno en una línea:
+1. `npm run verificar -- empresas/<archivo>.csv`: abre cada link y deja solo los correos que aparecen escritos en esa página → `empresas/verificadas.csv` (las otras, con el motivo, en `no_verificadas.csv`).
+2. `npm run limpiar -- empresas/verificadas.csv`: saca repetidas, ya contactadas y dominios que no reciben correo → `empresas/limpias.csv`.
+
+Si quedan menos de las pedidas, dilo y ofrece completar con 3B. Después sigue con `/programar`.

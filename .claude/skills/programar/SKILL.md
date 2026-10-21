@@ -12,7 +12,7 @@ Argumentos opcionales: $ARGUMENTS
 
 ## 1. Limpiar
 
-Si la lista no tiene su `limpias.csv` actualizado, corre desde `motor/`: `npm run limpiar -- empresas/<archivo>.csv`. Muestra cuántas quedan.
+Si la lista no tiene su `limpias.csv` actualizado, corre desde `motor/`: `npm run verificar -- empresas/<archivo>.csv` y después `npm run limpiar -- empresas/verificadas.csv`. Muestra cuántas quedan.
 
 ## 2. Armar la tanda
 

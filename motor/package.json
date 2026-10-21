@@ -8,13 +8,13 @@
   "scripts": {
     "login": "node src/login.js",
     "limpiar": "node src/limpiar.js",
+    "verificar": "node src/verificar.js",
+    "extraer": "node src/verificar.js --extraer",
     "generar": "node src/generar.js",
     "mis-cvs": "node src/mis_cvs.js",
     "revisar": "node src/programar.js --revisar",
     "programar": "node src/programar.js",
     "test": "node --test"
   },
-  "dependencies": {
-    "playwright-core": "1.48.2"
-  }
+  "dependencies": { "playwright-core": "1.48.2" }
 }

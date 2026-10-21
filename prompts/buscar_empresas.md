@@ -19,10 +19,11 @@ MI PERFIL
 
 REGLAS (muy importantes)
 1. Solo correos PUBLICADOS por la empresa: en el aviso, en su web oficial o en su página de empleo. Nunca inventes ni deduzcas direcciones (nada de "seguro es rrhh@...").
-2. Incluye siempre el link donde viste el correo.
+2. Incluye siempre el link exacto de la página donde está escrito el correo (no la portada si el correo está en "Contacto" o "Empleo"). Cada correo se verifica abriendo ese link: si no aparece ahí, se descarta.
 3. Un solo correo por empresa. No repitas empresas entre bloques.
 4. Nada de avisos que solo se postulan por formulario (LinkedIn Easy Apply, Computrabajo sin correo, Workday, etc.).
 5. Prioriza avisos de los últimos 30 días.
+6. Si no encuentras suficientes avisos con correo, no completes con correos dudosos: pasa a los niveles 2, 3 y 4, que siempre tienen más empresas. Busca en la web propia de cada empresa, no en portales de empleo.
 
 BUSCA POR NIVELES (de más a menos directo)
 - Nivel 1: avisos actuales que piden enviar el CV a un correo.
@@ -47,4 +48,4 @@ Copia el bloque CSV final y guárdalo como archivo `.csv` dentro de la carpeta `
 
 Ejemplo del formato: `plantillas/empresas_ejemplo.csv`.
 
-Consejo: las IAs a veces se equivocan con los correos. El proyecto revisa que el dominio reciba mails y saca repetidos, pero si un correo te parece raro, ábrelo en el link y verifícalo.
+Consejo: las IAs suelen inventar correos. Por eso el proyecto abre cada link y se queda solo con los correos que aparecen escritos ahí (`npm run verificar`), y después saca repetidos y dominios que no reciben mails.

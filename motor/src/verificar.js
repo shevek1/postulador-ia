@@ -1,0 +1,174 @@
+// Usage:
+//   npm run verificar -- empresas/lista.csv      keeps only rows whose email is written on the linked page
+//   npm run extraer -- https://acme.com ...      lists the emails a site publishes (home + contact/careers pages)
+//   npm run extraer -- empresas/sitios.txt       same, one URL per line
+// verificar writes verificadas.csv and no_verificadas.csv (with the reason) next to the list.
+const fs = require('fs');
+const path = require('path');
+const core = require('./core');
+const { findChrome } = require('./browser');
+
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
+const FOUND = /[a-z0-9][a-z0-9._%+-]*@[a-z0-9-]+(?:\.[a-z0-9-]+)+/gi;
+// Every label needs a letter and the TLD is letters only, so 'bootstrap@5.2.0' or 'jquery@3.6.0.min' never count.
+const DOMAIN = /^(?:[a-z0-9-]*[a-z][a-z0-9-]*\.)+[a-z]{2,}$/;
+const NOT_TLD = /\.(png|jpe?g|gif|svg|webp|avif|ico|css|js|mp4|webm|pdf)$/i;
+const FAKE_DOMAINS = /(^|\.)(example\.(com|org|net)|ejemplo\.com|dominio\.com|domain\.com|tudominio\.com|yourdomain\.com|email\.com|correo\.com|sentry\.io|wixpress\.com|sentry-next\.wixpress\.com)$/i;
+const FAKE_LOCALS = /^(tu|tuemail|tucorreo|nombre|name|user|usuario|email|correo|ejemplo|example|your|yourname)$/i;
+const CONTACT = /contact|empleo|trabaj|career|jobs?\b|rrhh|recursos-humanos|talent|unete|únete|sumate|súmate|postula|\bcv\b|join|equipo/i;
+const HR_FIRST = /rrhh|hr@|talent|empleo|empleos|jobs|careers|career|cv@|seleccion|selección|recruit|people|trabaja/i;
+
+const decodeCfEmail = hex => {
+  const key = parseInt(hex.slice(0, 2), 16);
+  let out = '';
+  for (let i = 2; i < hex.length; i += 2) out += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16) ^ key);
+  return out;
+};
+
+function extractEmails(html) {
+  let text = String(html);
+  const found = new Set();
+  for (const m of text.matchAll(/data-cfemail="([0-9a-f]+)"|email-protection#([0-9a-f]+)/gi)) found.add(decodeCfEmail(m[1] || m[2]));
+  text = text
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/%40/g, '@')
+    .replace(/\s*[[(]\s*(at|arroba)\s*[\])]\s*/gi, '@')
+    .replace(/\s*[[(]\s*(dot|punto)\s*[\])]\s*/gi, '.');
+  for (const m of text.matchAll(FOUND)) found.add(m[0]);
+  return [...found].map(e => e.toLowerCase()).filter(e => {
+    const [local, domain] = e.split('@');
+    return core.EMAIL.test(e) && DOMAIN.test(domain) && !NOT_TLD.test(domain) && !FAKE_DOMAINS.test(domain) && !FAKE_LOCALS.test(local)
+      && !/^[0-9a-f]{24,}$/.test(local);
+  });
+}
+
+// Same-site links that look like contact or careers pages, in page order, without repeats.
+function contactLinks(baseUrl, html, max = 5) {
+  const host = u => u.hostname.replace(/^www\./, '');
+  const base = new URL(baseUrl);
+  const out = [];
+  for (const m of String(html).matchAll(/<a\b[^>]*href=["']([^"'#]+)[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    let url;
+    try { url = new URL(m[1], base); } catch { continue; }
+    if (!/^https?:$/.test(url.protocol) || host(url) !== host(base)) continue;
+    const text = m[2].replace(/<[^>]+>/g, ' ');
+    if (!CONTACT.test(decodeURIComponent(url.pathname)) && !CONTACT.test(text)) continue;
+    url.hash = '';
+    if (url.href !== base.href && !out.includes(url.href)) out.push(url.href);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+// Emails a site publishes: the page itself first, then its contact/careers pages.
+async function crawl(url, getPage) {
+  const pages = [];
+  const html = await getPage(url);
+  pages.push({ url, emails: extractEmails(html) });
+  for (const link of contactLinks(url, html)) {
+    try { pages.push({ url: link, emails: extractEmails(await getPage(link)) }); } catch { /* broken subpage: skip */ }
+  }
+  return { pages, title: (String(html).match(/<title[^>]*>([^<]*)/i) || [])[1]?.trim() || '' };
+}
+
+async function pool(items, size, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => { while (next < items.length) { const i = next++; out[i] = await fn(items[i], i); } };
+  await Promise.all(Array.from({ length: Math.min(size, items.length) }, worker));
+  return out;
+}
+
+async function verifyRows(rows, getPage, concurrency = 6) {
+  const results = await pool(rows, concurrency, async row => {
+    const email = String(row.email || '').trim().toLowerCase();
+    const link = String(row.link || '').trim();
+    if (!/^https?:\/\//i.test(link)) return { ...row, email, motivo: 'sin link donde verificar el correo' };
+    let site;
+    try { site = await crawl(link, getPage); } catch { return { ...row, email, motivo: 'no se pudo abrir el link' }; }
+    const hit = site.pages.find(p => p.emails.includes(email));
+    return hit ? { ...row, email, link: hit.url } : { ...row, email, motivo: 'el correo no aparece en el link' };
+  });
+  return { ok: results.filter(r => !r.motivo), bad: results.filter(r => r.motivo) };
+}
+
+// Plain fetch first; if it fails or shows no email, render the page in headless Chrome (sites built with JS).
+function pageReader() {
+  const cache = new Map();
+  let browser;
+  const fetchHtml = async url => {
+    const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15000),
+      headers: { 'user-agent': UA, accept: 'text/html,*/*', 'accept-language': 'es-AR,es;q=0.9,en;q=0.8' } });
+    if (!res.ok) throw Error(`HTTP ${res.status}`);
+    if (!/html|text/i.test(res.headers.get('content-type') || '')) throw Error('no es una página');
+    return (await res.text()).slice(0, 3e6);
+  };
+  const render = async url => {
+    if (!browser) {
+      const { chromium } = require('playwright-core');
+      browser = chromium.launch({ executablePath: findChrome(), headless: true });
+    }
+    const context = await (await browser).newContext({ userAgent: UA, locale: 'es-419' });
+    try {
+      const page = await context.newPage();
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.waitForTimeout(1500);
+      return await page.content();
+    } finally { await context.close(); }
+  };
+  const read = async url => {
+    let html, error;
+    try { html = await fetchHtml(url); if (extractEmails(html).length) return html; } catch (e) { error = e; }
+    try { return await render(url); } catch (e) { if (html !== undefined) return html; throw error || e; }
+  };
+  return {
+    getPage: url => { if (!cache.has(url)) cache.set(url, read(url)); return cache.get(url); },
+    close: async () => { if (browser) await (await browser).close().catch(() => {}); },
+  };
+}
+
+async function verificar(file, reader) {
+  const src = path.resolve(core.PATHS.root, file);
+  const rows = core.csvObjects(fs.readFileSync(src, 'utf8'), ['empresa', 'email', 'link']);
+  console.log(`Verificando ${rows.length} correos en sus páginas...`);
+  const { ok, bad } = await verifyRows(rows, reader.getPage);
+  const cols = Object.keys(rows[0] || { empresa: '', email: '', link: '' });
+  const dir = path.dirname(src);
+  core.writeCsv(path.join(dir, 'verificadas.csv'), [cols, ...ok.map(r => cols.map(c => r[c]))]);
+  core.writeCsv(path.join(dir, 'no_verificadas.csv'), [[...cols, 'motivo'], ...bad.map(r => [...cols.map(c => r[c]), r.motivo])]);
+  console.log(`✔ ${ok.length} de ${rows.length} verificadas → ${path.relative(core.PATHS.root, path.join(dir, 'verificadas.csv'))}`);
+  const counts = bad.reduce((m, r) => (m[r.motivo] = (m[r.motivo] || 0) + 1, m), {});
+  for (const [m, n] of Object.entries(counts)) console.log(`  descartadas: ${n} · ${m}`);
+}
+
+async function extraer(args, reader) {
+  const urls = args.flatMap(a => fs.existsSync(path.resolve(core.PATHS.root, a))
+    ? fs.readFileSync(path.resolve(core.PATHS.root, a), 'utf8').split(/\r?\n/) : [a])
+    .map(s => s.trim()).filter(s => /^https?:\/\//i.test(s) || /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(s))
+    .map(s => (/^https?:/i.test(s) ? s : `https://${s}`));
+  if (!urls.length) throw Error('Uso: npm run extraer -- https://empresa.com [otra.com ...] o un .txt con una URL por línea');
+  await pool(urls, 5, async url => {
+    let site;
+    try { site = await crawl(url, reader.getPage); } catch { console.log(`✖ ${url} · no se pudo abrir`); return; }
+    const seen = new Map();
+    for (const p of site.pages) for (const e of p.emails) if (!seen.has(e)) seen.set(e, p.url);
+    const emails = [...seen].sort(([a], [b]) => HR_FIRST.test(b) - HR_FIRST.test(a));
+    if (!emails.length) { console.log(`✖ ${url} · sin correo publicado`); return; }
+    console.log(`✔ ${url} · ${site.title.slice(0, 60)}`);
+    for (const [e, page] of emails.slice(0, 4)) console.log(`    ${e}  ${page}`);
+  });
+}
+
+async function main() {
+  const [first, ...rest] = process.argv.slice(2);
+  const reader = pageReader();
+  try {
+    if (first === '--extraer') await extraer(rest, reader);
+    else if (first) await verificar(first, reader);
+    else throw Error('Uso: npm run verificar -- empresas/tu_lista.csv');
+  } finally { await reader.close(); }
+}
+
+module.exports = { extractEmails, decodeCfEmail, contactLinks, verifyRows };
+if (require.main === module) main().catch(e => { console.error('✖ ' + e.message); process.exitCode = 1; });
