@@ -52,32 +52,29 @@ Toma el bloque de `prompts/buscar_empresas.md`, reemplaza todo lo que está entr
 
 ## 3B. Si busca Claude acá mismo
 
-Avisa en una línea que gasta uso y que puede frenar cuando quiera. Sirve para cualquier rubro: las búsquedas se arman con sus áreas, puestos y zonas.
+Avisa en una línea que gasta uso de su plan (menos que lo normal, porque busca un modelo más liviano) y que puede frenar cuando quiera. Sirve para cualquier rubro.
 
-**Meta: 25 correos verificados por bloque. No cortes un bloque con menos** salvo que la persona pida frenar o se cumpla el tope del paso 6.
+**Quién busca.** Cada bloque lo hace el subagente `buscador-empresas` (modelo Haiku): junta webs de empresas, y el comando `extraer` saca los correos y escribe las filas. Tú no buscas ni escribes filas: preparas el pedido y muestras el avance. Así los resultados de búsqueda no llenan esta conversación.
 
-**Dónde están los correos.** Los portales y agregadores (Google Empleos, LinkedIn, Indeed, Computrabajo, Bumeran, ZonaJobs, Glassdoor, BeBee, Jooble, WhatJobs, JobLeads) casi nunca muestran el correo: no los uses como fuente. Los correos están en la web propia de cada empresa ("Trabajá con nosotros", "Empleo", "Contacto") y en algunos avisos que piden el CV por mail.
-
-Por cada bloque:
-
-1. **Junta sitios de empresas** con WebSearch. Rota estas búsquedas con cada área y cada zona (ciudad, provincia, país) del perfil, y no repitas una búsqueda ya hecha:
-   - `"trabaja con nosotros" <rubro> <zona>` · `"trabajá con nosotros" <rubro> <zona>` · `"envianos tu CV" <rubro> <zona>`
-   - `"rrhh@" <rubro> <zona>` · `"cv@" <rubro> <zona>` · `"empleo@" <rubro> <zona>` · `"talento@" <rubro>`
-   - `"enviar CV a" <puesto> <zona>` · `"enviar CV al mail" <puesto>` (avisos con correo)
-   - `empresas de <rubro> en <zona>` · `directorio de empresas de <rubro> <zona>` · `mejores <rubro> en <zona>` (listados, cámaras, rankings, directorios como Sortlist o Clutch)
-   - `consultora de recursos humanos <zona> "enviar CV"` (nivel 3)
-   El rubro es el tipo de empresa que contrata ese puesto: para "atención al cliente" sirven call centers, e-commerce, bancos, prepagas; para "Paid Media", agencias de marketing digital y performance; para "administración", estudios contables, logísticas, pymes. Piensa varios rubros por área.
-2. Guarda en `empresas/sitios.txt` (una URL por línea) solo webs propias de empresas o avisos individuales, sin portales ni redes sociales, y sin las que ya estén en `empresas/sitios_vistos.txt`, en las listas ya guardadas o en `datos/historial.json`. Junta al menos 40 por tanda.
-3. Corre desde `motor/`: `npm run extraer -- empresas/sitios.txt`. Abre cada sitio y sus páginas de contacto y empleo, y lista los correos publicados (primero los de RRHH o empleo). **No uses WebFetch para esto**: este comando gasta mucho menos uso. Después agrega esas URLs a `empresas/sitios_vistos.txt`.
-4. Por empresa elige **un** correo, en este orden: RRHH, empleo, talento o CV; si no hay, el de contacto general (nivel 4). Nunca escribas un correo que no salió en el resultado del comando. El link es la página donde apareció.
-5. Agrega las filas a `empresas/lista_claude.csv` y muestra una línea: "Bloque 3/8 · 18 de 25". Si no llegaste a 25, repite desde el paso 1 con búsquedas nuevas: otras zonas del perfil, otros rubros que contraten esas áreas, consultoras.
-6. Tope: si después de 6 tandas seguidas el bloque no avanza, frena y dile cuántas llevas y qué propones ampliar (más zonas, más áreas o modalidad). Una sola pregunta.
-7. Al completar el bloque, sigue con el siguiente sin preguntar, salvo que la persona pida frenar.
+1. **Prepara el pedido una sola vez**, desde `mi_perfil/respuestas.md` y `perfil.json`:
+   - Áreas o puestos, y para cada uno de 3 a 5 rubros: tipos de empresa que contratan ese puesto (para "atención al cliente": call centers, e-commerce, bancos, prepagas; para "Paid Media": agencias de marketing digital, de performance, e-commerce).
+   - Zonas concretas para buscar, de la más cercana a la más amplia (por ejemplo "Quilmes", "CABA", "Buenos Aires", "Argentina", "Uruguay", "España").
+   - País para la columna `pais` de cada zona.
+2. **Por cada bloque**, en orden y de a uno (escriben en el mismo archivo), lanza el subagente con Agent (`subagent_type: "buscador-empresas"`) y este pedido:
+   ```
+   Bloque <n> de <total de bloques>. Objetivo: que empresas/lista_claude.csv llegue a <n × 25> filas.
+   Áreas y rubros: <puesto 1>: <rubros> · <puesto 2>: <rubros>
+   Zonas (de cerca a lejos): <zona> (<país>), ...
+   Nivel: <nivel> · Modalidad: <modalidad>
+   ```
+3. Cuando vuelve, muestra una línea: "Bloque 3/8 ✔ 75 empresas". Si el estado es "completo", sigue con el siguiente bloque sin preguntar.
+4. Si vuelve "frenado", di cuántas lleva y propone **una** ampliación concreta (más zonas, otro rubro u otra modalidad) con una sola pregunta. Con la respuesta, actualiza el pedido y relanza ese bloque.
+5. La persona puede pedir frenar en cualquier momento: lo ya guardado queda en `empresas/lista_claude.csv`.
 
 ## 4. Cierre
 
 Desde `motor/`, corre en orden y muestra el resultado de cada uno en una línea:
-1. `npm run verificar -- empresas/<archivo>.csv`: abre cada link y deja solo los correos que aparecen escritos en esa página → `empresas/verificadas.csv` (las otras, con el motivo, en `no_verificadas.csv`).
+1. `npm run verificar -- empresas/<archivo>.csv` (también para `lista_claude.csv`): abre cada link y deja solo los correos que aparecen escritos en esa página → `empresas/verificadas.csv` (las otras, con el motivo, en `no_verificadas.csv`).
 2. `npm run limpiar -- empresas/verificadas.csv`: saca repetidas, ya contactadas y dominios que no reciben correo → `empresas/limpias.csv`.
 
 Si quedan menos de las pedidas, dilo y ofrece completar con 3B. Después sigue con `/programar`.

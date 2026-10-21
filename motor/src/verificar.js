@@ -2,10 +2,13 @@
 //   npm run verificar -- empresas/lista.csv      keeps only rows whose email is written on the linked page
 //   npm run extraer -- https://acme.com ...      lists the emails a site publishes (home + contact/careers pages)
 //   npm run extraer -- empresas/sitios.txt       same, one URL per line
+//   npm run extraer -- empresas/sitios.txt --agregar empresas/lista.csv [--puesto X] [--pais Y]
+//     also appends one row per new company (best email first) and logs the sites in sitios_vistos.txt
 // verificar writes verificadas.csv and no_verificadas.csv (with the reason) next to the list.
 const fs = require('fs');
 const path = require('path');
 const core = require('./core');
+const { companyKey, PUBLIC } = require('./limpiar');
 const { findChrome } = require('./browser');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
@@ -16,6 +19,8 @@ const NOT_TLD = /\.(png|jpe?g|gif|svg|webp|avif|ico|css|js|mp4|webm|pdf)$/i;
 const FAKE_DOMAINS = /(^|\.)(example\.(com|org|net)|ejemplo\.com|dominio\.com|domain\.com|tudominio\.com|yourdomain\.com|email\.com|correo\.com|sentry\.io|wixpress\.com|sentry-next\.wixpress\.com)$/i;
 const FAKE_LOCALS = /^(tu|tuemail|tucorreo|nombre|name|user|usuario|email|correo|ejemplo|example|your|yourname)$/i;
 const CONTACT = /contact|empleo|trabaj|career|jobs?\b|rrhh|recursos-humanos|talent|unete|únete|sumate|súmate|postula|\bcv\b|join|equipo/i;
+const GENERIC = /^(inicio|home|bienvenid[oa]s?|contacto|contact|p[aá]gina principal|sitio oficial|web oficial)$/i;
+const LIST_COLS = ['empresa', 'puesto', 'email', 'link', 'pais', 'modalidad', 'nivel'];
 const HR_FIRST = /rrhh|hr@|talent|empleo|empleos|jobs|careers|career|cv@|seleccion|selección|recruit|people|trabaja/i;
 
 const decodeCfEmail = hex => {
@@ -70,6 +75,45 @@ async function crawl(url, getPage) {
     try { pages.push({ url: link, emails: extractEmails(await getPage(link)) }); } catch { /* broken subpage: skip */ }
   }
   return { pages, title: (String(html).match(/<title[^>]*>([^<]*)/i) || [])[1]?.trim() || '' };
+}
+
+const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// Company name from the page title: the part that matches the domain, else the domain itself.
+function companyName(title, url) {
+  const root = new URL(url).hostname.replace(/^www\./, '').split('.')[0];
+  const parts = String(title).split(/\s+[|–—·-]\s+|:\s+/).map(p => p.trim()).filter(p => p && !GENERIC.test(p));
+  const hit = parts.find(p => norm(p).includes(norm(root)) || norm(root).includes(norm(p)));
+  return hit || root.charAt(0).toUpperCase() + root.slice(1);
+}
+
+// One list row per site: an HR-looking email or one on a careers page first (level 2), any other otherwise (level 4).
+const CAREERS = /empleo|trabaj|career|jobs?\b|rrhh|talent|unete|únete|sumate|súmate|postula/i;
+function siteRow(url, site, { puesto = '', pais = '' } = {}) {
+  const found = site.pages.flatMap(p => p.emails.map(email => ({ email, link: p.url,
+    hr: HR_FIRST.test(email) || CAREERS.test(decodeURIComponent(new URL(p.url).pathname)) })));
+  if (!found.length) return null;
+  const best = found.find(f => f.hr) || found[0];
+  return { empresa: companyName(site.title, url), puesto, email: best.email, link: best.link, pais, modalidad: '',
+    nivel: best.hr ? '2' : '4' };
+}
+
+// Rows whose company or (non-public) domain is not in the list yet.
+function addRows(existing, rows) {
+  const companies = new Set(), domains = new Set(), out = [];
+  const remember = r => {
+    const domain = String(r.email).toLowerCase().split('@')[1] || '';
+    companies.add(companyKey(r.empresa));
+    if (!PUBLIC.has(domain)) domains.add(domain);
+  };
+  existing.forEach(remember);
+  for (const r of rows) {
+    const domain = String(r.email).toLowerCase().split('@')[1] || '';
+    if (companies.has(companyKey(r.empresa)) || domains.has(domain)) continue;
+    remember(r);
+    out.push(r);
+  }
+  return out;
 }
 
 async function pool(items, size, fn) {
@@ -142,7 +186,13 @@ async function verificar(file, reader) {
   for (const [m, n] of Object.entries(counts)) console.log(`  descartadas: ${n} · ${m}`);
 }
 
-async function extraer(args, reader) {
+async function extraer(argv, reader) {
+  const flags = {}, args = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (/^--(agregar|puesto|pais)$/.test(argv[i])) flags[argv[i].slice(2)] = argv[++i] || '';
+    else args.push(argv[i]);
+  }
+  const rows = [];
   const urls = args.flatMap(a => fs.existsSync(path.resolve(core.PATHS.root, a))
     ? fs.readFileSync(path.resolve(core.PATHS.root, a), 'utf8').split(/\r?\n/) : [a])
     .map(s => s.trim()).filter(s => /^https?:\/\//i.test(s) || /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(s))
@@ -155,9 +205,19 @@ async function extraer(args, reader) {
     for (const p of site.pages) for (const e of p.emails) if (!seen.has(e)) seen.set(e, p.url);
     const emails = [...seen].sort(([a], [b]) => HR_FIRST.test(b) - HR_FIRST.test(a));
     if (!emails.length) { console.log(`✖ ${url} · sin correo publicado`); return; }
+    rows.push(siteRow(url, site, flags));
     console.log(`✔ ${url} · ${site.title.slice(0, 60)}`);
     for (const [e, page] of emails.slice(0, 4)) console.log(`    ${e}  ${page}`);
   });
+  if (flags.agregar) {
+    const file = path.resolve(core.PATHS.root, flags.agregar);
+    const existing = fs.existsSync(file) ? core.csvObjects(fs.readFileSync(file, 'utf8'), ['empresa', 'email']) : [];
+    const added = addRows(existing, rows);
+    const all = [...existing, ...added];
+    core.writeCsv(file, [LIST_COLS, ...all.map(r => LIST_COLS.map(c => r[c] || ''))]);
+    fs.appendFileSync(path.join(path.dirname(file), 'sitios_vistos.txt'), urls.join('\n') + '\n');
+    console.log(`＋ ${added.length} empresas nuevas · total ${all.length} en ${path.relative(core.PATHS.root, file)}`);
+  }
 }
 
 async function main() {
@@ -170,5 +230,5 @@ async function main() {
   } finally { await reader.close(); }
 }
 
-module.exports = { extractEmails, decodeCfEmail, contactLinks, verifyRows };
+module.exports = { extractEmails, decodeCfEmail, contactLinks, verifyRows, companyName, siteRow, addRows };
 if (require.main === module) main().catch(e => { console.error('✖ ' + e.message); process.exitCode = 1; });

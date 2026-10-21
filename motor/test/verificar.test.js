@@ -60,3 +60,30 @@ test('verifyRows keeps only rows whose email is written on the linked page, and 
   assert.match(why.D, /no se pudo abrir/);
   assert.match(why.E, /sin link/);
 });
+
+test('companyName picks the title part that matches the domain, skipping generic words', () => {
+  const { companyName } = require('../src/verificar');
+  assert.strictEqual(companyName('Inicio | Develops Software', 'https://develops.ar'), 'Develops Software');
+  assert.strictEqual(companyName('Digital Marketing Agency in Pakistan | WeProms Digital', 'https://weproms.com/'), 'WeProms Digital');
+  assert.strictEqual(companyName('Agencia Africa | Diseño Web, Branding', 'https://agenciaafrica.com.ar'), 'Agencia Africa');
+  assert.strictEqual(companyName('', 'https://www.nextcommerce.com.ar/contact'), 'Nextcommerce');
+});
+
+test('siteRow takes the HR email first and marks the level; addRows skips companies already listed', () => {
+  const { siteRow, addRows } = require('../src/verificar');
+  const site = { title: 'Acme', pages: [
+    { url: 'https://acme.com/', emails: ['info@acme.com'] },
+    { url: 'https://acme.com/empleo', emails: ['rrhh@acme.com'] }] };
+  assert.deepStrictEqual(siteRow('https://acme.com/', site, { puesto: 'Ventas', pais: 'Argentina' }),
+    { empresa: 'Acme', puesto: 'Ventas', email: 'rrhh@acme.com', link: 'https://acme.com/empleo', pais: 'Argentina', modalidad: '', nivel: '2' });
+  assert.strictEqual(siteRow('https://b.com/', { title: 'B', pages: [{ url: 'https://b.com/', emails: ['hola@b.com'] }] }, {}).nivel, '4');
+  const careers = siteRow('https://d.com/', { title: 'D', pages: [
+    { url: 'https://d.com/contact', emails: ['ana@d.com'] }, { url: 'https://d.com/ar/career/', emails: ['s.p@d.com'] }] }, {});
+  assert.deepStrictEqual([careers.email, careers.nivel], ['s.p@d.com', '2']);
+  assert.strictEqual(siteRow('https://c.com/',{ title: 'C', pages: [{ url: 'https://c.com/', emails: [] }] }, {}), null);
+  const existing = [{ empresa: 'Acme', email: 'rrhh@acme.com' }];
+  const added = addRows(existing, [
+    { empresa: 'Acme SA', email: 'jobs@acme.com' }, { empresa: 'Beta', email: 'cv@beta.com' },
+    { empresa: 'Beta Group', email: 'otro@beta.com' }, { empresa: 'Gamma', email: 'yo@gmail.com' }]);
+  assert.deepStrictEqual(added.map(r => r.email), ['cv@beta.com', 'yo@gmail.com']);
+});

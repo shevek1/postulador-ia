@@ -58,5 +58,5 @@ async function main() {
   for (const [m, n] of Object.entries(counts)) console.log(`  descartadas: ${n} · ${m}`);
 }
 
-module.exports = { triage, companyKey };
+module.exports = { triage, companyKey, PUBLIC };
 if (require.main === module) main().catch(e => { console.error('✖ ' + e.message); process.exitCode = 1; });
