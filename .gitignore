@@ -1,0 +1,17 @@
+# Personal data — never publish
+mi_perfil/*
+!mi_perfil/.gitkeep
+empresas/*
+!empresas/.gitkeep
+salida/
+datos/
+cuentas.json
+
+# Logged-in Gmail sessions (anyone with these folders can open your inbox)
+.perfiles/
+
+# Tooling
+node_modules/
+odd/
+*.log
+.DS_Store

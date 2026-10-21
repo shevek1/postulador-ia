@@ -1,0 +1,4 @@
+[
+  { "n": 1, "empresa": "Empresa Ejemplo SA", "puesto": "Representante de atención al cliente", "email": "rrhh@example.com", "plantilla": "atencion", "extra": "" },
+  { "n": 2, "empresa": "Estudio Contable Ejemplo", "puesto": "Asistente administrativo/a", "email": "cv@example.org", "plantilla": "admin", "extra": "No trabajé con Bejerman, pero aprendo rápido y ya uso Tango Gestión." }
+]

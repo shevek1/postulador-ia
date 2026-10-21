@@ -1,0 +1,72 @@
+{
+  "nombre": "Lucía Gómez",
+  "contacto": {
+    "email": "lucia.gomez.ejemplo@gmail.com",
+    "telefono": "+54 9 11 0000-0000",
+    "ubicacion": "Rosario, Argentina",
+    "linkedin": "linkedin.com/in/lucia-gomez-ejemplo"
+  },
+  "idiomas": "Español nativo | Inglés B1",
+  "foto": "",
+  "firma": "Lucía Gómez\n+54 9 11 0000-0000\nlucia.gomez.ejemplo@gmail.com",
+  "competencias": {
+    "atencion": { "titulo": "Atención al cliente", "detalle": "Atención por teléfono, chat y en persona; resolución de reclamos; seguimiento de casos" },
+    "admin": { "titulo": "Administración", "detalle": "Carga de datos, facturación, agenda, archivo y control de documentación" },
+    "herramientas": { "titulo": "Herramientas", "detalle": "Excel (tablas dinámicas, BUSCARV), Google Workspace, Tango Gestión, Canva" },
+    "ventas": { "titulo": "Ventas", "detalle": "Venta en mostrador, armado de presupuestos, seguimiento de clientes por WhatsApp" },
+    "redes": { "titulo": "Redes sociales", "detalle": "Publicaciones y respuestas en Instagram para un comercio local" }
+  },
+  "proyectos": {
+    "emprendimiento": {
+      "titulo": "Tienda de indumentaria online (emprendimiento propio)",
+      "detalle": "2023 - Actualidad",
+      "puntos": [
+        "Gestiono pedidos, stock y envíos de una tienda en Instagram con más de 300 ventas.",
+        "Armo las publicaciones en Canva y respondo consultas de clientes."
+      ]
+    }
+  },
+  "experiencia": {
+    "farmacia": {
+      "titulo": "Farmacia Del Centro - Atención al público y caja",
+      "detalle": "2022 - 2024",
+      "puntos": [
+        "Atención al público, cobro y cierre de caja diario.",
+        "Control de vencimientos y carga de facturas de proveedores en Excel."
+      ]
+    },
+    "callcenter": {
+      "titulo": "Contact center (tercerizado) - Representante de atención",
+      "detalle": "2021 - 2022",
+      "puntos": [
+        "Atención de entre 40 y 60 llamadas diarias de clientes de una empresa de servicios.",
+        "Registro de casos en el CRM y derivación a las áreas correspondientes."
+      ]
+    }
+  },
+  "formacion": [
+    { "titulo": "Tecnicatura en Administración - Instituto Superior N.º 0", "detalle": "En curso (2.º año)." },
+    { "titulo": "Excel intermedio - Curso online", "detalle": "2023." },
+    { "titulo": "Secundario completo", "detalle": "2020." }
+  ],
+  "plantillas": {
+    "atencion": {
+      "titular": "Atención al cliente | Soporte",
+      "perfil": "Tengo cuatro años de experiencia atendiendo clientes por teléfono, chat y en mostrador. Me organizo bien, registro cada caso y me gusta resolver el problema de punta a punta.",
+      "competencias": ["atencion", "herramientas", "ventas"],
+      "proyectos": ["emprendimiento"],
+      "experiencia": ["callcenter", "farmacia"],
+      "asunto": "Postulación: {puesto} – {nombre}",
+      "mensaje": "Hola, equipo de {empresa}:\n\nLes escribo para postularme a {puesto}. Trabajé en un contact center atendiendo entre 40 y 60 llamadas por día y después en atención al público en una farmacia, así que estoy acostumbrada a resolver reclamos con calma y a dejar todo registrado. {extra}\n\nLes adjunto mi CV. Quedo atenta por si quieren coordinar una entrevista.\n\nSaludos,\n{firma}"
+    },
+    "admin": {
+      "titular": "Asistente administrativa",
+      "perfil": "Estudiante de la Tecnicatura en Administración con experiencia en caja, facturación y control de documentación. Manejo Excel con soltura y soy ordenada con los datos.",
+      "competencias": ["admin", "herramientas", "atencion"],
+      "proyectos": ["emprendimiento"],
+      "experiencia": ["farmacia", "callcenter"],
+      "asunto": "Postulación: {puesto} – {nombre}",
+      "mensaje": "Hola, equipo de {empresa}:\n\nMe interesa la posición de {puesto}. Estudio la Tecnicatura en Administración y en la farmacia donde trabajé llevaba la caja diaria y cargaba las facturas de proveedores en Excel. {extra}\n\nLes dejo mi CV adjunto. Muchas gracias por su tiempo.\n\nSaludos,\n{firma}"
+    }
+  }
+}

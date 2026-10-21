@@ -1,0 +1,19 @@
+{
+  "name": "postulador-ia-motor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Builds tailored CV PDFs and schedules job applications in Gmail (scheduled send only).",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "login": "node src/login.js",
+    "limpiar": "node src/limpiar.js",
+    "generar": "node src/generar.js",
+    "revisar": "node src/programar.js --revisar",
+    "programar": "node src/programar.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "playwright-core": "1.48.2"
+  }
+}
