@@ -1,12 +1,43 @@
 // Usage: npm run login -- cuenta1 tuemail@gmail.com
 // Opens a normal Chrome window with its own profile for this account. Google blocks sign-in from automated
 // browsers, so sign-in happens here, in plain Chrome; the automation reuses the saved session later.
+// Waits until that window is closed (up to 30 minutes), then verifies the session.
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const core = require('./core');
 const { findChrome, openProfile } = require('./browser');
 const { GMAIL } = require('./gmail');
+
+// Google also rejects sign-in ("No puedes acceder... navegador no seguro") when Chrome runs as a child of the
+// terminal that launched it, so the OS shell starts it instead, exactly as if the person opened it.
+function launchDetached(profile) {
+  const args = [`--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', GMAIL];
+  if (process.platform === 'win32') {
+    fs.mkdirSync(core.PATHS.datos, { recursive: true });
+    const cmd = path.join(core.PATHS.datos, 'abrir_chrome.cmd');
+    fs.writeFileSync(cmd, `@start "" "${findChrome()}" ${args.map(a => `"${a}"`).join(' ')}\r\n`);
+    spawn('explorer.exe', [cmd], { detached: true, stdio: 'ignore' }).unref();
+  } else if (process.platform === 'darwin') {
+    spawn('open', ['-na', 'Google Chrome', '--args', ...args], { detached: true, stdio: 'ignore' }).unref();
+  } else {
+    spawn(findChrome(), args, { detached: true, stdio: 'ignore' }).unref();
+  }
+}
+
+// Chrome holds an exclusive "lockfile" (Windows) or a "SingletonLock" symlink (Mac/Linux) while the profile is open.
+function profileOpen(profile) {
+  if (process.platform !== 'win32') {
+    try { fs.lstatSync(path.join(profile, 'SingletonLock')); return true; } catch { return false; }
+  }
+  try { fs.closeSync(fs.openSync(path.join(profile, 'lockfile'), 'r+')); return false; }
+  catch (e) { return e.code === 'EBUSY' || e.code === 'EPERM'; }
+}
+
+async function waitFor(check, ms) {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise(r => setTimeout(r, 1000))) if (check()) return true;
+  return false;
+}
 
 async function verify(acc) {
   const ctx = await openProfile(path.join(core.PATHS.perfiles, acc.alias));
@@ -18,7 +49,7 @@ async function verify(acc) {
     const re = new RegExp('Cuenta de Google:.*' + acc.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'si');
     if (await page.getByRole('button', { name: re }).count() !== 1)
       throw Error(`La sesión abierta no es ${acc.email}. Repite el login con esa cuenta.`);
-  } finally { await ctx.close(); }
+  } finally { await ctx.close().catch(() => {}); }
 }
 
 async function main() {
@@ -36,11 +67,10 @@ async function main() {
   console.log(`\nSe abre Chrome para ${email}.\n  1. Inicia sesión en Gmail con esa cuenta.\n` +
     '  2. Si Gmail no está en español: rueda ⚙ → Ver todos los ajustes → Idioma → Español → Guardar.\n' +
     '  3. CIERRA esa ventana de Chrome para continuar.\n');
-  await new Promise((resolve, reject) => {
-    const p = spawn(findChrome(), [`--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', GMAIL],
-      { stdio: 'ignore' });
-    p.on('error', reject); p.on('exit', resolve);
-  });
+  launchDetached(profile);
+  if (!await waitFor(() => profileOpen(profile), 60000)) throw Error('Chrome no se abrió. Ábrelo una vez a mano y repite.');
+  await waitFor(() => !profileOpen(profile), 30 * 60000);
+  if (profileOpen(profile)) throw Error('Pasaron 30 minutos y Chrome sigue abierto. Ciérralo y repite.');
   console.log('Verificando la sesión...');
   await verify(acc);
   console.log(`✔ ${email} lista como "${alias}". Cuentas configuradas: ${others.length + 1}.`);
