@@ -5,9 +5,18 @@ description: Arma la búsqueda de empresas según lo que busca la persona (modal
 
 # /buscar-empresas
 
-## 1. Qué busca (con opciones para tocar)
+## 1. Qué busca
 
-Lee `mi_perfil/respuestas.md` y `mi_perfil/perfil.json` si existen y propón esas respuestas como primera opción ("(lo que me dijiste)"). Usa **AskUserQuestion** en 2 llamadas:
+**No repitas preguntas ya respondidas.** Lee `mi_perfil/respuestas.md` y `mi_perfil/perfil.json`. Todo lo que ya figura ahí (modalidad, áreas, zona, jornada, nivel, idioma) se usa directo.
+
+Si ya están, muestra un resumen de 1 línea ("Busco: remoto o híbrido · Paid Media, Marketing técnico, Desarrollo web · Argentina y Latinoamérica · part time · junior") y haz **una sola** llamada a AskUserQuestion con lo que falta:
+- **Cuántas empresas**: 100 · 200 · 300 · Más de 300.
+- **¿Dónde buscamos?** (opciones de abajo).
+- **¿Busco con esto?**: "Sí, así está bien" · "Quiero cambiar algo". Solo si elige cambiar, pregunta qué y pide únicamente eso.
+
+Si es una tanda nueva y ya existe `empresas/PROMPT_BUSQUEDA.md`, ofrece reutilizarlo tal cual.
+
+Solo si falta información (no hay cuestionario), usa **AskUserQuestion** en 2 llamadas, preguntando únicamente lo que falte:
 
 Llamada 1:
 - **Modalidad** (multiSelect): Remoto · Híbrido · Presencial.
