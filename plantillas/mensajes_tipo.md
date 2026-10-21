@@ -5,9 +5,9 @@ Claude arma tus plantillas con esta lógica. Son ejemplos de estructura: el tuyo
 ## 1. Respuesta a un aviso publicado
 Lo más efectivo. Dice el puesto exacto y prueba que encajas con 1 o 2 hechos.
 
-> **Asunto:** Postulación: Representante de atención al cliente – Lucía Gómez
+> **Asunto:** CV de Lucía Gómez para Representante de atención al cliente
 >
-> Hola, equipo de Empresa Ejemplo:
+> Hola, equipo de Empresa Ejemplo.
 >
 > Les escribo para postularme a Representante de atención al cliente. Trabajé en un contact center atendiendo entre 40 y 60 llamadas por día y después en atención al público en una farmacia, así que estoy acostumbrada a resolver reclamos con calma y a dejar todo registrado.
 >
@@ -24,9 +24,9 @@ Una frase honesta vale más que ignorarlo: muestra que leíste el aviso.
 ## 3. Candidatura espontánea
 Para empresas sin aviso abierto. Pide que te sumen a su base y nombra el área.
 
-> **Asunto:** CV para Atención al cliente – Lucía Gómez
+> **Asunto:** CV de Lucía Gómez para Atención al cliente
 >
-> Hola, equipo de Consultora Ejemplo:
+> Hola, equipo de Consultora Ejemplo.
 >
 > Les dejo mi CV para sumarme a su base de candidatos para posiciones de atención al cliente o administración, remotas o en Rosario. Tengo cuatro años atendiendo clientes por teléfono y en mostrador, y manejo Excel y Tango Gestión.
 >

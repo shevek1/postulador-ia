@@ -25,6 +25,7 @@ Si para mejorar algo falta un dato (un número, una fecha, una herramienta), pre
 - Perfil de 2-3 líneas con hechos, no adjetivos.
 - Cada experiencia: 2-3 puntos con verbo concreto + qué hizo + resultado (si existe).
 - Suena a persona real: frases cortas. Prohibido: "me apasiona", "proactivo/a y orientado/a a resultados", "altamente motivado/a", "aportar valor", "sinergia", "en el dinámico mundo de", "trabajo en equipo y bajo presión", tres adjetivos seguidos, guiones largos (—).
+- Puntuación fluida: sin dos puntos (:), punto y coma (;) ni guiones (- o –) donde no hacen falta. Une ideas con "y", "porque", "así que" o un punto. Solo se aceptan en fechas, teléfonos y viñetas del CV. En `mensaje` no van nunca.
 - Sin DNI, estado civil, dirección exacta ni fecha de nacimiento.
 - Lo que no tiene, no aparece. Lo que el área pide y no tiene se aclara en el mensaje con honestidad, nunca en el CV.
 
@@ -34,7 +35,7 @@ Crea `mi_perfil/perfil.json` con la estructura de `plantillas/perfil_ejemplo.jso
 - `nombre`, `contacto` (email, telefono con código de país, ubicacion, linkedin/portfolio si tiene), `idiomas`, `foto` (archivo en mi_perfil/ o ""), `firma` (nombre, teléfono, correo, en líneas).
 - `competencias`, `proyectos`, `experiencia`, `formacion`: solo hechos reales ya redactados.
 - `plantillas`: una por cada área elegida en el cuestionario (2 a 5), con clave corta (`atencion`, `admin`, `ventas`, `dev`…). Cada una elige qué competencias, proyectos y experiencias mostrar y tiene `titular`, `perfil`, `asunto` y `mensaje`.
-  - `asunto`: "Postulación: {puesto} – {nombre}".
+  - `asunto`: "CV de {nombre} para {puesto}".
   - `mensaje`: 60-120 palabras, en el tono elegido. Saludo con `{empresa}`, a qué se postula (`{puesto}`), 1-2 hechos que prueban que encaja, `{extra}` al final de ese párrafo, cierre simple y `{firma}`. Ver `plantillas/mensajes_tipo.md`.
   - Marcadores permitidos: `{empresa}`, `{puesto}`, `{nombre}`, `{extra}`, `{firma}`.
 

@@ -31,6 +31,7 @@ Como una persona real que cuenta hechos concretos, no como un folleto.
 
 - Frases cortas, verbos concretos ("atendí", "armé", "vendí") y números cuando existan.
 - Evita lo genérico o inflado: "me apasiona", "en el dinámico mundo de", "sinergia", "proactivo y orientado a resultados", "perfil altamente motivado", "aportar valor", "estimado equipo de reclutamiento", "no dudes en contactarme", "soy la persona ideal". Nada de guiones largos (—) ni listas de tres adjetivos.
+- Puntuación fluida: evita los dos puntos (:), el punto y coma (;) y los guiones (- o –) cuando no hacen falta. Une las ideas con "y", "porque", "así que" o con un punto y seguido, como escribiría una persona en un mail. En el CV se aceptan solo en fechas, teléfonos y viñetas.
 - Mensaje de 60-120 palabras: a qué se postula, 1-2 hechos que prueban que encaja, una aclaración honesta si falta algo, cierre simple.
 - Tono elegido en el cuestionario. Si el aviso está en inglés, el mensaje va en inglés con el nivel real.
 

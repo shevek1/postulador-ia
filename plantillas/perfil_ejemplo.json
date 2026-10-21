@@ -56,8 +56,8 @@
       "competencias": ["atencion", "herramientas", "ventas"],
       "proyectos": ["emprendimiento"],
       "experiencia": ["callcenter", "farmacia"],
-      "asunto": "Postulación: {puesto} – {nombre}",
-      "mensaje": "Hola, equipo de {empresa}:\n\nLes escribo para postularme a {puesto}. Trabajé en un contact center atendiendo entre 40 y 60 llamadas por día y después en atención al público en una farmacia, así que estoy acostumbrada a resolver reclamos con calma y a dejar todo registrado. {extra}\n\nLes adjunto mi CV. Quedo atenta por si quieren coordinar una entrevista.\n\nSaludos,\n{firma}"
+      "asunto": "CV de {nombre} para {puesto}",
+      "mensaje": "Hola, equipo de {empresa}.\n\nLes escribo para postularme a {puesto}. Trabajé en un contact center atendiendo entre 40 y 60 llamadas por día y después en atención al público en una farmacia, así que estoy acostumbrada a resolver reclamos con calma y a dejar todo registrado. {extra}\n\nLes adjunto mi CV. Quedo atenta por si quieren coordinar una entrevista.\n\nSaludos,\n{firma}"
     },
     "admin": {
       "titular": "Asistente administrativa",
@@ -65,8 +65,8 @@
       "competencias": ["admin", "herramientas", "atencion"],
       "proyectos": ["emprendimiento"],
       "experiencia": ["farmacia", "callcenter"],
-      "asunto": "Postulación: {puesto} – {nombre}",
-      "mensaje": "Hola, equipo de {empresa}:\n\nMe interesa la posición de {puesto}. Estudio la Tecnicatura en Administración y en la farmacia donde trabajé llevaba la caja diaria y cargaba las facturas de proveedores en Excel. {extra}\n\nLes dejo mi CV adjunto. Muchas gracias por su tiempo.\n\nSaludos,\n{firma}"
+      "asunto": "CV de {nombre} para {puesto}",
+      "mensaje": "Hola, equipo de {empresa}.\n\nMe interesa la posición de {puesto}. Estudio la Tecnicatura en Administración y en la farmacia donde trabajé llevaba la caja diaria y cargaba las facturas de proveedores en Excel. {extra}\n\nLes dejo mi CV adjunto. Muchas gracias por su tiempo.\n\nSaludos,\n{firma}"
     }
   }
 }
