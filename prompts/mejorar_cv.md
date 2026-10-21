@@ -1,6 +1,6 @@
-# Prompt 3 — Mejorar mi CV (buenas prácticas)
+# Prompt — Mejorar mi CV (buenas prácticas)
 
-Claude ya lo aplica solo en el Paso 3. Si quieres mejorar un CV aparte (en Claude Code o en claude.ai), adjunta tu CV y pega esto:
+En Claude Code esto lo hace `/mejorar-cv`. Si quieres mejorar un CV en otro lado (claude.ai, ChatGPT), adjunta tu CV y pega esto:
 
 ```
 Mejora mi CV con estas reglas:

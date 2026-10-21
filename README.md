@@ -37,29 +37,28 @@ Claude te guía de principio a fin: armas tu perfil una vez y después cada tand
 - Windows: clic derecho dentro de la carpeta → **Abrir en Terminal**.
 - Mac: clic derecho en la carpeta → **Nuevo Terminal en la carpeta**.
 
-**4. Escribe `claude`**, inicia sesión con tu cuenta Pro y pega el primer prompt. Listo: Claude instala lo que falte y te guía.
+**4. Escribe `claude`**, inicia sesión con tu cuenta Pro y escribe **`/empezar`**. Listo: Claude instala lo que falte y te guía.
 
-## Cómo se usa: 4 prompts
+## Cómo se usa: 6 comandos
 
-| # | Dónde | Qué hace |
-|---|---|---|
-| 1 | Claude Code | [Empezar](prompts/1_empezar.md): carga tu CV, cuestionario, perfil y CV mejorado, cuentas de Gmail. |
-| 2 | ChatGPT o claude.ai | [Buscar empresas](prompts/2_buscar_empresas.md): de a 25 hasta 200-300, y al final te da un CSV. |
-| 3 | (opcional) | [Mejorar mi CV](prompts/3_mejorar_cv.md) con buenas prácticas, aparte. |
-| 4 | Claude Code | [Programar tanda](prompts/4_programar_tanda.md): CV + mensaje por empresa, programados en Gmail. |
+Escribes el comando en Claude Code y él hace el resto. Al terminar cada paso, sigue solo con el próximo.
+
+| Comando | Qué pasa |
+|---|---|
+| `/empezar` | Prepara tu computadora y te pide el CV (PDF, Word o texto). ¿No tienes? Lo arma contigo con [`cv_base.md`](plantillas/cv_base.md). |
+| `/cuestionario` | 10 a 14 preguntas estilo test psicotécnico: situaciones, forma de trabajar, logros, tono. Tocas opciones y al final te muestra tu perfil. |
+| `/mejorar-cv` | Te muestra qué cambiaría de tu CV (antes → después) y te arma un **CV mejorado en PDF por cada área** que buscas. Sin inventar nada. |
+| `/conectar-gmail` | Conecta 1 a 3 cuentas: se abre Chrome, inicias sesión y lo cierras. |
+| `/buscar-empresas` | Te pregunta remoto o presencial, rubro, zona, jornada, nivel y cuántas quieres. Te da el **prompt listo para ChatGPT** o busca él mismo. Bloques de 25 hasta 200, 300 o más, y termina en un CSV. |
+| `/programar` | Un CV y un mensaje por empresa, te muestra el plan y, cuando confirmas, los programa con **"Programar envío"** de Gmail. Después puedes apagar la computadora. |
 
 ```
-descargar → prompt 1 (CV + preguntas) → prompt 2 (empresas → CSV) → copiar CSV en empresas/ → prompt 4 → listo
+/empezar → /cuestionario → /mejorar-cv → /conectar-gmail → /buscar-empresas → /programar → listo
 ```
 
-## Qué pasa en cada paso
+Para la siguiente tanda: `/buscar-empresas` y `/programar`. Nunca le escribe dos veces a la misma empresa.
 
-1. **Tu CV:** lo pones en `mi_perfil/` (PDF, Word o texto). ¿No tienes? Claude lo arma contigo usando [`plantillas/cv_base.md`](plantillas/cv_base.md).
-2. **Cuestionario:** 10 a 14 preguntas cortas, estilo test psicotécnico (situaciones, forma de trabajar, logros, tono). Sirve para que los mensajes suenen a ti y destaquen lo que realmente sabes hacer.
-3. **Perfil y CV mejorado:** Claude arma una plantilla por cada tipo de puesto que buscas y te muestra cómo queda el CV en PDF. Lo ajustas hasta que te guste. Ver [cómo es un CV recomendado](plantillas/cv_recomendado.md) y [tipos de mensaje](plantillas/mensajes_tipo.md).
-4. **Cuentas de Gmail:** se abre Chrome, inicias sesión y lo cierras. Una vez por cuenta.
-5. **Empresas:** buscas con el prompt 2 y guardas el CSV en `empresas/`. El proyecto saca repetidas, ya contactadas y correos con dominios que no reciben mails.
-6. **Tanda:** Claude genera un CV y un mensaje por empresa, te muestra el plan y, cuando confirmas, los programa con **"Programar envío"** de Gmail. Después puedes apagar la computadora: Gmail los envía en la fecha elegida.
+**Sin Claude Code también sirven:** el [prompt para buscar empresas](prompts/buscar_empresas.md) (pégalo en ChatGPT) y el [prompt para mejorar tu CV](prompts/mejorar_cv.md). Más guías: [CV recomendado](plantillas/cv_recomendado.md) · [tipos de mensaje](plantillas/mensajes_tipo.md).
 
 ## Límites y buenas prácticas
 
@@ -91,6 +90,7 @@ Todo queda en tu computadora. Tus datos (`mi_perfil/`, `empresas/`, `salida/`, `
 Claude los corre por ti, pero existen (dentro de `motor/`):
 
 ```
+npm run mis-cvs                              # CVs mejorados por área → mi_perfil/cvs_mejorados/
 npm run login -- cuenta1 tu@gmail.com      # conectar una cuenta
 npm run limpiar -- empresas/lista.csv       # limpiar una lista
 npm run generar                              # CVs + envio.csv desde salida/tanda.json

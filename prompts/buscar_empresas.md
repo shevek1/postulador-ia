@@ -1,6 +1,6 @@
-# Prompt 2 — Buscar empresas (en ChatGPT o en claude.ai)
+# Prompt — Buscar empresas (en ChatGPT o en claude.ai)
 
-Claude te da este prompt ya completado con tus datos. Si lo haces a mano, cambia lo que está entre [corchetes].
+En Claude Code, `/buscar-empresas` te pregunta qué buscas y te da este prompt ya completado. Si lo haces a mano, cambia lo que está entre [corchetes].
 
 Pégalo en ChatGPT (con búsqueda web activada) o en claude.ai. Cuando termine cada bloque escribe **"siguiente"**. Cuando tengas suficientes (200, 300 o más) escribe **"final"**.
 
