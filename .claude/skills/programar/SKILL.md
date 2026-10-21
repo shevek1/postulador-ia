@@ -51,4 +51,8 @@ Pregunta "¿Programo estas N postulaciones?" (Sí / No). Si dice que sí:
 
 ## Si se corta
 
-Volver a correr el mismo comando: el motor revisa en Gmail lo que quedó a medias y no duplica. Si se detiene de nuevo, mira `datos/error_<cuenta>.png` y explica qué pasó.
+Que Claude Code deje de seguir el comando (por ejemplo, por poca memoria) no significa que se haya cortado: el motor puede seguir trabajando solo. Antes de decir que se cortó, corre `npm run programar -- --en-curso`:
+- **"Sí: hay una programación en curso"**: sigue trabajando. Dilo, pide que no use Chrome y que espere; no lo vuelvas a lanzar (el motor no deja correr dos a la vez). Para ver cuándo termina, repite `--en-curso` cada tanto.
+- **"No hay ninguna programación en curso"**: ahí sí se detuvo. Volver a correr el mismo comando: el motor revisa en Gmail lo que quedó a medias y no duplica. Si se detiene de nuevo, mira `datos/error_<cuenta>.png` y explica qué pasó.
+
+El adjunto le llega a la empresa como `CV_<Nombre>_<Puesto>.pdf`; el número de los archivos de `salida/cvs/` es solo para ordenarlos.

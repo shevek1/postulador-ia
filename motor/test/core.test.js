@@ -108,3 +108,21 @@ test('parseWhen accepts both date styles and rejects the past', () => {
   assert.throws(() => core.parseWhen('21/10/2026', '09:00', now), /futura/);
   assert.throws(() => core.parseWhen('32/10/2026', '09:00', now), /Fecha/);
 });
+
+test('attachmentName gives the recruiter a clean file name without the batch number', () => {
+  assert.strictEqual(core.attachmentName('Fabrizio Pérez', 'Paid Media / Ads'), 'CV_Fabrizio_Perez_Paid_Media_Ads.pdf');
+  assert.strictEqual(core.attachmentName('Ana Gómez', ''), 'CV_Ana_Gomez.pdf');
+});
+
+test('lock allows one programar at a time and ignores a lock left by a dead process', () => {
+  const file = path.join(tmp(), 'programar.lock');
+  const release = core.lock(file, 111, () => true);
+  assert.strictEqual(core.running(file, () => true).pid, 111);
+  assert.throws(() => core.lock(file, 222, pid => pid === 111), /en curso.*111/);
+  assert.strictEqual(core.running(file, () => false), null);
+  const again = core.lock(file, 222, () => false);
+  assert.strictEqual(core.running(file, () => true).pid, 222);
+  again();
+  assert.strictEqual(fs.existsSync(file), false);
+  release();
+});

@@ -13,6 +13,7 @@ const PATHS = {
   historial: path.join(ROOT, 'datos', 'historial.json'),
   cuentas: path.join(ROOT, 'cuentas.json'),
   perfiles: path.join(ROOT, '.perfiles'),
+  lock: path.join(ROOT, 'datos', 'programar.lock'),
 };
 const COLUMNS = ['N', 'Empresa', 'Puesto', 'Email destino', 'Archivo CV', 'Asunto', 'Mensaje'];
 // Gmail allows 100 scheduled messages per account at the same time.
@@ -198,5 +199,26 @@ function loadAccounts() {
 
 const beep = (n = 3) => process.stdout.write('\x07'.repeat(n));
 
+// The recruiter sees this name, not the numbered file kept in salida/cvs.
+const words = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+const attachmentName = (nombre, puesto) => ['CV', words(nombre), words(puesto)].filter(Boolean).join('_') + '.pdf';
+
+// One programar per project: two runs on the same account could schedule the same application twice.
+const isAlive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+function running(file, alive = isAlive) {
+  let info;
+  try { info = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+  return info && alive(info.pid) ? info : null;
+}
+function lock(file, pid = process.pid, alive = isAlive) {
+  const other = running(file, alive);
+  if (other && other.pid !== pid)
+    throw Error(`Ya hay una programación en curso (proceso ${other.pid}, desde ${new Date(other.since).toLocaleTimeString()}). ` +
+      'Espera a que termine o ciérrala antes de repetir.');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ pid, since: new Date().toISOString() }));
+  return () => { try { if (JSON.parse(fs.readFileSync(file, 'utf8')).pid === pid) fs.unlinkSync(file); } catch {} };
+}
+
 module.exports = { PATHS, COLUMNS, MAX_SCHEDULED, sha, parseCsv, toCsv, csvObjects, writeCsv, cleanBody, validateRow,
-  Ledger, preview, assign, parseWhen, readJson, loadAccounts, atomicWrite, beep, EMAIL };
+  Ledger, preview, assign, parseWhen, readJson, loadAccounts, atomicWrite, beep, EMAIL, attachmentName, lock, running };

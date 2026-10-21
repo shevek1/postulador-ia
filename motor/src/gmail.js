@@ -71,8 +71,10 @@ async function scheduleOne(page, app) {
   if (app.pdf) {
     const [chooser] = await Promise.all([page.waitForEvent('filechooser'),
       compose.getByRole('button', { name: 'Adjuntar archivos', exact: true }).click()]);
-    await chooser.setFiles(app.pdf);
-    await compose.getByRole('link').filter({ hasText: path.basename(app.pdf) }).waitFor({ state: 'visible', timeout: 120000 });
+    // Uploaded under a clean name: the recruiter never sees the batch number of salida/cvs.
+    const name = app.attachName || path.basename(app.pdf);
+    await chooser.setFiles({ name, mimeType: 'application/pdf', buffer: fs.readFileSync(app.pdf) });
+    await compose.getByRole('link').filter({ hasText: name }).waitFor({ state: 'visible', timeout: 120000 });
     await compose.getByRole('progressbar').waitFor({ state: 'hidden', timeout: 120000 });
   }
   const recipients = await compose.locator('[email]').evaluateAll(ns => [...new Set(ns.map(x => x.getAttribute('email').toLowerCase()))].sort());
