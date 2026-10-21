@@ -8,7 +8,7 @@ const { openProfile } = require('./browser');
 const { scheduleBatch, countScheduled } = require('./gmail');
 
 const MAX_RUNS = 20, MAX_IDLE = 3;
-const log = m => console.log(`${new Date().toLocaleTimeString()} ${m}`);
+const log = m => console.log(`${core.hhmm(new Date())} ${m}`);
 let touchedGmail = false;
 
 function args(argv) {
@@ -65,7 +65,7 @@ async function main() {
   const a = args(process.argv.slice(2));
   if (a.enCurso) {
     const r = core.running(core.PATHS.lock);
-    return console.log(r ? `Sí: hay una programación en curso (proceso ${r.pid}, desde ${new Date(r.since).toLocaleTimeString()}).`
+    return console.log(r ? `Sí: hay una programación en curso (proceso ${r.pid}, desde ${core.hhmm(r.since)}).`
       : 'No hay ninguna programación en curso.');
   }
   if (!a.fecha || !a.hora) throw Error('Falta la fecha y hora. Ejemplo: npm run programar -- --fecha 22/10/2026 --hora 09:00');

@@ -119,6 +119,7 @@ test('lock allows one programar at a time and ignores a lock left by a dead proc
   const release = core.lock(file, 111, () => true);
   assert.strictEqual(core.running(file, () => true).pid, 111);
   assert.throws(() => core.lock(file, 222, pid => pid === 111), /en curso.*111/);
+  assert.strictEqual(core.hhmm(new Date(2026, 9, 21, 19, 7)), '19:07');
   assert.strictEqual(core.running(file, () => false), null);
   const again = core.lock(file, 222, () => false);
   assert.strictEqual(core.running(file, () => true).pid, 222);

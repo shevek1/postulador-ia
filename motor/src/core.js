@@ -203,6 +203,9 @@ const beep = (n = 3) => process.stdout.write('\x07'.repeat(n));
 const words = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
 const attachmentName = (nombre, puesto) => ['CV', words(nombre), words(puesto)].filter(Boolean).join('_') + '.pdf';
 
+// 24-hour HH:MM in local time; toLocaleTimeString drops AM/PM on some Windows setups.
+const hhmm = d => { const t = new Date(d); return [t.getHours(), t.getMinutes()].map(n => String(n).padStart(2, '0')).join(':'); };
+
 // One programar per project: two runs on the same account could schedule the same application twice.
 const isAlive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 function running(file, alive = isAlive) {
@@ -213,7 +216,7 @@ function running(file, alive = isAlive) {
 function lock(file, pid = process.pid, alive = isAlive) {
   const other = running(file, alive);
   if (other && other.pid !== pid)
-    throw Error(`Ya hay una programación en curso (proceso ${other.pid}, desde ${new Date(other.since).toLocaleTimeString()}). ` +
+    throw Error(`Ya hay una programación en curso (proceso ${other.pid}, desde ${hhmm(other.since)}). ` +
       'Espera a que termine o ciérrala antes de repetir.');
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ pid, since: new Date().toISOString() }));
@@ -221,4 +224,4 @@ function lock(file, pid = process.pid, alive = isAlive) {
 }
 
 module.exports = { PATHS, COLUMNS, MAX_SCHEDULED, sha, parseCsv, toCsv, csvObjects, writeCsv, cleanBody, validateRow,
-  Ledger, preview, assign, parseWhen, readJson, loadAccounts, atomicWrite, beep, EMAIL, attachmentName, lock, running };
+  Ledger, preview, assign, parseWhen, readJson, loadAccounts, atomicWrite, beep, EMAIL, attachmentName, lock, running, hhmm };
