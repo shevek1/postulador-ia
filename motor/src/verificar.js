@@ -101,13 +101,13 @@ function siteRow(url, site, { puesto = '', pais = '', modalidad = '' } = {}) {
 // Minutes per company measured on the test run (25 companies in about 10 minutes), used until there is real data.
 const DEFAULT_MIN_PER_COMPANY = 0.4;
 // Pace from empresas/progreso.csv. Gaps longer than 30 minutes are pauses between sessions and do not count.
-function estimate(log, objetivo) {
+function estimate(log, objetivo, enLista = 0) {
   let minutes = 0, gained = 0;
   for (let i = 1; i < log.length; i++) {
     const gap = (Date.parse(log[i].fecha) - Date.parse(log[i - 1].fecha)) / 60000;
     if (gap > 0 && gap <= 30) { minutes += gap; gained += Number(log[i].total) - Number(log[i - 1].total); }
   }
-  const total = log.length ? Number(log[log.length - 1].total) : 0;
+  const total = Math.max(log.length ? Number(log[log.length - 1].total) : 0, enLista);
   const faltan = Math.max(0, objetivo - total);
   const medido = gained > 0;
   const perCompany = medido ? minutes / gained : DEFAULT_MIN_PER_COMPANY;
@@ -245,7 +245,9 @@ function estimar([objetivo]) {
   if (!(n > 0)) throw Error('Uso: npm run estimar -- <cantidad de empresas que querés en total>');
   const file = path.join(core.PATHS.root, 'empresas', 'progreso.csv');
   const log = fs.existsSync(file) ? core.csvObjects(fs.readFileSync(file, 'utf8'), ['fecha', 'total']) : [];
-  const e = estimate(log, n);
+  const list = path.join(core.PATHS.root, 'empresas', 'lista_claude.csv');
+  const enLista = fs.existsSync(list) ? core.csvObjects(fs.readFileSync(list, 'utf8'), ['empresa', 'email']).length : 0;
+  const e = estimate(log, n, enLista);
   const time = e.minutos >= 60 ? `${Math.floor(e.minutos / 60)} h ${e.minutos % 60} min` : `${e.minutos} min`;
   if (!e.faltan) return console.log(`Ya hay ${e.total} de ${n}: no falta buscar.`);
   console.log(`Hay ${e.total} de ${n} · faltan ${e.faltan} (${e.bloques} bloques) · unos ${time}` +

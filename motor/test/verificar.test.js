@@ -107,4 +107,6 @@ test('estimate uses the measured pace and skips long pauses between sessions', (
   assert.strictEqual(e.minutos, Math.round(108 * 26 / 60));
   const d = v.estimate([], 100);
   assert.deepStrictEqual([d.total, d.faltan, d.medido, d.minutos], [0, 100, false, 40]);
+  const old = v.estimate([], 200, 92);
+  assert.deepStrictEqual([old.total, old.faltan, old.bloques], [92, 108, 5]);
 });
