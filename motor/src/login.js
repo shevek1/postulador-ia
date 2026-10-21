@@ -4,7 +4,7 @@
 // Waits until that window is closed (up to 30 minutes), then verifies the session.
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const core = require('./core');
 const { findChrome, openProfile } = require('./browser');
 const { GMAIL } = require('./gmail');
@@ -32,6 +32,21 @@ function profileOpen(profile) {
   }
   try { fs.closeSync(fs.openSync(path.join(profile, 'lockfile'), 'r+')); return false; }
   catch (e) { return e.code === 'EBUSY' || e.code === 'EPERM'; }
+}
+
+// Windows only: once the inbox loads, the window title of that profile's Chrome shows "<email> - Gmail".
+// Closing it then spares the person from guessing when to close the window. Returns true if it closed it.
+function closeWhenInbox(profile, email) {
+  if (process.platform !== 'win32') return false;
+  const q = s => `'${s.replace(/'/g, "''")}'`;
+  const ps = `$ProgressPreference = 'SilentlyContinue'; $p = Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | ? { $_.CommandLine -and ` +
+    `$_.CommandLine.Contains(${q('--user-data-dir=' + profile)}) -and -not $_.CommandLine.Contains('--type=') }; ` +
+    `foreach ($x in $p) { $g = Get-Process -Id $x.ProcessId -EA 0; ` +
+    `if ($g -and $g.MainWindowTitle.ToLower().Contains(${q(email)}) -and $g.MainWindowTitle.Contains('Gmail')) ` +
+    `{ [void]$g.CloseMainWindow(); 'closed' } }`;
+  const encoded = Buffer.from(ps, 'utf16le').toString('base64'); // avoids PowerShell 5 quote-escaping bugs
+  try { return execFileSync('powershell', ['-NoProfile', '-EncodedCommand', encoded], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).includes('closed'); }
+  catch { return false; }
 }
 
 async function waitFor(check, ms) {
@@ -66,10 +81,15 @@ async function main() {
   fs.mkdirSync(profile, { recursive: true });
   console.log(`\nSe abre Chrome para ${email}.\n  1. Inicia sesión en Gmail con esa cuenta.\n` +
     '  2. Si Gmail no está en español: rueda ⚙ → Ver todos los ajustes → Idioma → Español → Guardar.\n' +
-    '  3. CIERRA esa ventana de Chrome para continuar.\n');
+    '  3. Cuando veas tu bandeja de entrada, CIERRA esa ventana de Chrome (en Windows se cierra sola).\n');
   launchDetached(profile);
   if (!await waitFor(() => profileOpen(profile), 60000)) throw Error('Chrome no se abrió. Ábrelo una vez a mano y repite.');
-  await waitFor(() => !profileOpen(profile), 30 * 60000);
+  let tick = 0;
+  await waitFor(() => {
+    if (!profileOpen(profile)) return true;
+    if (++tick % 3 === 0 && closeWhenInbox(profile, acc.email)) console.log('✔ Sesión iniciada. Cierro Chrome...');
+    return false;
+  }, 30 * 60000);
   if (profileOpen(profile)) throw Error('Pasaron 30 minutos y Chrome sigue abierto. Ciérralo y repite.');
   console.log('Verificando la sesión...');
   await verify(acc);
