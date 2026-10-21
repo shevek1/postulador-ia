@@ -9,6 +9,7 @@
     "login": "node src/login.js",
     "limpiar": "node src/limpiar.js",
     "generar": "node src/generar.js",
+    "mis-cvs": "node src/mis_cvs.js",
     "revisar": "node src/programar.js --revisar",
     "programar": "node src/programar.js",
     "test": "node --test"
