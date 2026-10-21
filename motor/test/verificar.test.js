@@ -110,3 +110,17 @@ test('estimate uses the measured pace and skips long pauses between sessions', (
   const old = v.estimate([], 200, 92);
   assert.deepStrictEqual([old.total, old.faltan, old.bloques], [92, 108, 5]);
 });
+
+test('extractEmails decodes backslash-u escapes instead of keeping their letters', () => {
+  const bs = String.fromCharCode(92);
+  const html = `x = "${bs}u300c@te.com"; y = "${bs}u003cinfo@acme.com${bs}u003e";`;
+  assert.deepStrictEqual(v.extractEmails(html), ['info@acme.com']);
+});
+
+test('companyName decodes HTML entities and repairs mojibake in titles', () => {
+  assert.strictEqual(v.companyName('Digital JUMP! &raquo; Born to JUMP', 'https://digitaljump.com.ar'), 'Digital JUMP!');
+  assert.strictEqual(v.companyName('Elatre marketing &amp; software agency', 'https://elatre.com'), 'Elatre marketing & software agency');
+  assert.strictEqual(v.companyName('Pulso Digital &#8211; Agencia Creativa Integral', 'https://pulsodigital.co'), 'Pulso Digital');
+  const broken = 'L' + String.fromCharCode(0xc3, 0x84) + 'BERIT', fixed = 'L' + String.fromCharCode(0xc4) + 'BERIT';
+  assert.strictEqual(v.companyName(broken, 'https://laberit.com'), fixed);
+});

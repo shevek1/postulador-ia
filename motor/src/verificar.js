@@ -35,6 +35,7 @@ function extractEmails(html) {
   const found = new Set();
   for (const m of text.matchAll(/data-cfemail="([0-9a-f]+)"|email-protection#([0-9a-f]+)/gi)) found.add(decodeCfEmail(m[1] || m[2]));
   text = text
+    .replace(/\\u([0-9a-f]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d))
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/%40/g, '@')
@@ -79,10 +80,24 @@ async function crawl(url, getPage) {
 
 const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+const ENTITIES = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', nbsp: ' ', raquo: '»', laquo: '«', ndash: '–', mdash: '—', middot: '·' };
+// Titles come raw from the HTML: decode entities and undo UTF-8 read as Latin-1 ("LÃBERIT" -> "LÄBERIT").
+function cleanTitle(title) {
+  let s = String(title)
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&([a-z]+);/gi, (m, n) => ENTITIES[n.toLowerCase()] ?? m);
+  if (/[\u00c2-\u00f4][\u0080-\u00bf]/.test(s) && !/[^\u0000-\u00ff]/.test(s)) {
+    const fixed = Buffer.from(s, 'latin1').toString('utf8');
+    if (!fixed.includes('\ufffd')) s = fixed;
+  }
+  return s;
+}
+
 // Company name from the page title: the part that matches the domain, else the domain itself.
 function companyName(title, url) {
   const root = new URL(url).hostname.replace(/^www\./, '').split('.')[0];
-  const parts = String(title).split(/\s+[|–—·-]\s+|:\s+/).map(p => p.trim()).filter(p => p && !GENERIC.test(p));
+  const parts = cleanTitle(title).split(/\s+[|–—·»«-]\s+|:\s+/).map(p => p.trim()).filter(p => p && !GENERIC.test(p));
   const hit = parts.find(p => norm(p).includes(norm(root)) || norm(root).includes(norm(p)));
   return hit || root.charAt(0).toUpperCase() + root.slice(1);
 }
