@@ -40,7 +40,7 @@ Entra hasta la carpeta donde ves `README.md`, `CLAUDE.md` y `motor`. Windows a v
 - Windows 10: haz clic en la barra de direcciones del Explorador (arriba), escribe `powershell` y presiona Enter.
 - Mac: clic derecho en la carpeta → **Nuevo Terminal en la carpeta**.
 
-**4. Escribe `claude`**, inicia sesión con tu cuenta Pro y escribe **`/empezar`**. Listo: Claude instala lo que falte y te guía.
+**4. Escribe `claude`** e inicia sesión con tu cuenta Pro. Cuando pregunte si confías en esta carpeta, elige **Sí**: así corre los comandos del proyecto sin pedirte permiso a cada paso (y nunca puede leer tus sesiones de Gmail). Después escribe **`/empezar`**. Listo: Claude instala lo que falte y te guía.
 
 ## Cómo se usa: 6 comandos
 

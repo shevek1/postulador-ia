@@ -20,6 +20,7 @@ Si `mi_perfil/` está vacío, saluda en 3 líneas como máximo:
    - Mac: pide que baje e instale el "LTS" desde https://nodejs.org (doble clic en el archivo .pkg). Si ya tiene Homebrew, sirve `brew install node`.
 3. Si dice que falta Chrome, pide que lo instale desde https://www.google.com/chrome.
 4. Si dice que faltan dependencias: `cd motor && npm install && npm test`. Muestra solo "✔ Todo listo" o el error.
+5. Si la persona tuvo que aprobar estos comandos uno por uno, es que no aceptó confiar en la carpeta y los permisos del proyecto no se aplican. Dile: escribe `/exit`, vuelve a escribir `claude` en esta misma carpeta y, cuando pregunte si confías en ella, elige **Sí**.
 
 ## 3. Ver en qué paso está
 
