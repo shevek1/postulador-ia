@@ -10,28 +10,24 @@ Necesita `mi_perfil/perfil.json`, `cuentas.json` y una lista en `empresas/`. Si 
 
 Argumentos opcionales: $ARGUMENTS
 
-## 1. Limpiar
+Todo lo de este comando lo hacen scripts en segundos: no leas los CSV ni escribas filas a mano. Corre cada comando desde `motor/` y muestra solo su resumen.
 
-Si la lista no tiene su `limpias.csv` actualizado, corre desde `motor/`: `npm run verificar -- empresas/<archivo>.csv` y después `npm run limpiar -- empresas/verificadas.csv`. Muestra cuántas quedan.
+## 1. Preparar la lista
+
+`npm run preparar`. Verifica todas las listas de `empresas/` juntas (lo que ya encontró la búsqueda de Claude no se vuelve a abrir) y deja `empresas/limpias.csv` sin repetidas ni empresas ya contactadas. Muestra cuántas quedan.
 
 ## 2. Armar la tanda
 
-Lee `empresas/limpias.csv` y escribe `salida/tanda.json`, una fila por empresa:
-
-```json
-{ "n": 1, "empresa": "...", "puesto": "...", "email": "...", "plantilla": "atencion", "extra": "" }
-```
-
-- `plantilla`: la que mejor encaja con el puesto. Si ninguna encaja, deja la fila afuera y dilo al final.
-- `extra`: vacío casi siempre. Una sola frase honesta cuando aporte: un requisito que no cumple ("No trabajé con SAP, pero aprendo rápido sistemas nuevos.") o algo del aviso que encaja muy bien. Nada genérico ni inventado.
-- Candidatura espontánea (nivel 3-4): `puesto` = el área ("Atención al cliente"), y sobrescribe `asunto` con "CV para {puesto} – {nombre}".
-- Aviso en inglés: sobrescribe `asunto` y `mensaje` en esa fila, en inglés, con el nivel real.
-- Para ahorrar uso, escribe el JSON de una vez; no redactes mensajes completos por fila salvo los de inglés.
+1. `npm run tanda`. Si `perfil.json` tiene una sola plantilla, ya escribe `salida/tanda.json`. Si tiene varias, lista los puestos con su cantidad y las plantillas disponibles.
+2. Decide qué plantilla va con cada puesto (pocos, no hace falta preguntar si es obvio; `-` deja ese puesto afuera) y corre:
+   `npm run tanda -- --plantillas "Paid Media=paid;Desarrollo web=dev"`
+3. Muestra el resumen ("✔ 34 empresas · paid: 9 · dev: 18…" y las que quedaron afuera con el motivo).
+4. Solo si la persona lo pide: agrega en `salida/tanda.json` un `extra` (una frase honesta: un requisito que no cumple o algo del aviso que encaja muy bien) o, para un aviso en inglés, `asunto` y `mensaje` en inglés en esa fila. Edita solo esas filas.
 
 ## 3. Generar y mostrar
 
-1. `npm run generar`. Si avisa CVs de más de 1 página, corrige y repite.
-2. Muestra 3 mensajes al azar completos y la ruta de la carpeta `salida/cvs/`.
+1. `npm run generar`. Crea los CVs y muestra 3 mensajes de ejemplo. Si avisa CVs de más de 1 página, corrige `perfil.json` y repite.
+2. Muestra los 3 ejemplos tal cual y la ruta de la carpeta `salida/cvs/`.
 
 ## 4. Revisar el plan
 
@@ -44,8 +40,8 @@ Corre `npm run revisar -- --fecha DD/MM/AAAA --hora HH:MM [--cuentas a,b]` y mue
 ## 5. Programar (solo con confirmación explícita)
 
 Pregunta "¿Programo estas N postulaciones?" (Sí / No). Si dice que sí:
-1. Avisa: tarda cerca de 1 minuto por correo, no uses Chrome ni apagues la computadora; después Gmail envía solo aunque la PC esté apagada.
-2. Corre `npm run programar -- --fecha DD/MM/AAAA --hora HH:MM [--cuentas a,b]` en segundo plano y espera a que termine. Si la computadora tiene poca memoria, sugiere correr el mismo comando en una terminal aparte.
+1. Avisa: tarda cerca de 1 minuto por correo y cuenta, no uses Chrome ni apagues la computadora; después Gmail envía solo aunque la PC esté apagada.
+2. Corre `npm run programar -- --fecha DD/MM/AAAA --hora HH:MM [--cuentas a,b]` en segundo plano y espera a que termine. Con 2 o más cuentas agrega `--paralelo`: programa todas a la vez y tarda la mitad o menos, pero abre un Chrome por cuenta. Si la computadora tiene poca memoria (o ya se cortó una vez), no uses `--paralelo` y sugiere correr el comando en una terminal aparte.
 3. Al terminar, informa cuántas quedaron programadas por cuenta y pide que lo confirme en Gmail → **Programados**.
 4. Si quedaron sin lugar (más de 100 por cuenta), explica que se programan cuando salgan las actuales: el mismo comando con otra fecha sigue donde quedó.
 

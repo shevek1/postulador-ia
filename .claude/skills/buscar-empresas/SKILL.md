@@ -79,8 +79,6 @@ En la lista, la columna `nivel` es el nivel de búsqueda (1 a 4, ver `prompts/bu
 
 ## 4. Cierre
 
-Desde `motor/`, corre en orden y muestra el resultado de cada uno en una línea:
-1. `npm run verificar -- empresas/<archivo>.csv` (también para `lista_claude.csv`): abre cada link y deja solo los correos que aparecen escritos en esa página → `empresas/verificadas.csv` (las otras, con el motivo, en `no_verificadas.csv`).
-2. `npm run limpiar -- empresas/verificadas.csv`: saca repetidas, ya contactadas y dominios que no reciben correo → `empresas/limpias.csv`.
+Desde `motor/`, corre `npm run preparar` y muestra su resumen. Verifica todas las listas de `empresas/` juntas (abre cada link y deja solo los correos que aparecen escritos; lo que encontró la búsqueda de Claude ya está verificado y no se vuelve a abrir) y después saca repetidas, ya contactadas y dominios que no reciben correo → `empresas/limpias.csv`. Las descartadas quedan con el motivo en `no_verificadas.csv` y `descartadas.csv`.
 
 Si quedan menos de las pedidas, dilo y ofrece completar con 3B. Después sigue con `/programar`.

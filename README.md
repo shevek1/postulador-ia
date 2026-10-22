@@ -97,11 +97,12 @@ npm run mis-cvs                              # CVs mejorados por área → mi_pe
 npm run login -- cuenta1 tu@gmail.com      # conectar una cuenta
 npm run extraer -- empresas/sitios.txt      # correos publicados en cada web
 npm run estimar -- 200                      # cuánto falta para llegar a 200 empresas
-npm run verificar -- empresas/lista.csv     # confirmar que cada correo está en su link
-npm run limpiar -- empresas/verificadas.csv # limpiar una lista
+npm run estado                              # qué falta y cuál es el siguiente paso
+npm run preparar                            # verificar y limpiar todas las listas
+npm run tanda                               # armar la tanda desde empresas/limpias.csv
 npm run generar                              # CVs + envio.csv desde salida/tanda.json
 npm run revisar -- --fecha 22/10/2026 --hora 09:00
-npm run programar -- --fecha 22/10/2026 --hora 09:00 [--cuentas cuenta1,cuenta2]
+npm run programar -- --fecha 22/10/2026 --hora 09:00 [--cuentas cuenta1,cuenta2] [--paralelo]
 npm run programar -- --en-curso             # ver si sigue corriendo una programación
 npm test
 ```

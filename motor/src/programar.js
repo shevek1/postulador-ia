@@ -93,7 +93,7 @@ async function main() {
   const problems = items.filter(i => !['LISTO', 'YA PROGRAMADO', 'YA CONTACTADA'].includes(i.status));
   for (const p of problems) console.log(`  ✖ fila ${p.row.N} ${p.row.Empresa}: ${p.status}`);
   const skipped = by('YA CONTACTADA');
-  if (skipped.length) console.log(`  Se saltean ${skipped.length} empresas a las que ya les escribiste: ${skipped.map(i => i.row.Empresa).join(', ')}`);
+  if (skipped.length) console.log(`  Se saltea(n) ${skipped.length} ya contactada(s) antes: ${skipped.map(i => i.row.Empresa).join(', ')}`);
   const ready = by('LISTO').map(i => ({ ...i.app, when, attachName: core.attachmentName(nombre, i.row.Puesto) }));
   const { byAccount, leftover } = core.assign(ready, accounts.map(c => c.alias), ledger, Date.now());
   console.log(`\nFilas: ${items.length} · listas: ${ready.length} · ya programadas: ${by('YA PROGRAMADO').length} · ` +
