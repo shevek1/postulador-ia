@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm install)",
+      "Bash(npm test)",
+      "Bash(node *)",
+      "Bash(cd *)",
+      "WebSearch",
+      "Edit(empresas/**)",
+      "Edit(salida/**)",
+      "Edit(mi_perfil/**)"
+    ],
+    "deny": [
+      "Read(**/.perfiles/**)",
+      "Edit(**/.perfiles/**)"
+    ]
+  }
+}

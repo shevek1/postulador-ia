@@ -31,10 +31,13 @@ Claude te guía de principio a fin: armas tu perfil una vez y después cada tand
   curl -fsSL https://claude.ai/install.sh | bash
   ```
 
-**2. Descarga este proyecto:** botón verde **Code → Download ZIP**, y descomprímelo (por ejemplo en el Escritorio).
+**2. Descarga este proyecto:** botón verde **Code → Download ZIP**, y descomprímelo en una carpeta que no se sincronice con la nube, por ejemplo `C:\postulador` (en Windows, el Escritorio y Documentos suelen subirse a OneDrive, y ahí quedarían tus sesiones de Gmail y tus CVs).
 
-**3. Abre la terminal en la carpeta:**
-- Windows: clic derecho dentro de la carpeta → **Abrir en Terminal**.
+Entra hasta la carpeta donde ves `README.md`, `CLAUDE.md` y `motor`. Windows a veces crea una carpeta dentro de otra con el mismo nombre (`postulador-ia-main\postulador-ia-main`): usa la de adentro.
+
+**3. Abre la terminal en esa carpeta:**
+- Windows 11: clic derecho dentro de la carpeta → **Abrir en Terminal**.
+- Windows 10: haz clic en la barra de direcciones del Explorador (arriba), escribe `powershell` y presiona Enter.
 - Mac: clic derecho en la carpeta → **Nuevo Terminal en la carpeta**.
 
 **4. Escribe `claude`**, inicia sesión con tu cuenta Pro y escribe **`/empezar`**. Listo: Claude instala lo que falte y te guía.
