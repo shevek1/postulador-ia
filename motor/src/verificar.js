@@ -168,6 +168,19 @@ async function verifyRows(rows, getPage, concurrency = 6) {
   return { ok: results.filter(r => !r.motivo), bad: results.filter(r => r.motivo) };
 }
 
+// Rows already verified, or added by extraer (which read the email on that page), are not opened again.
+const cacheKey = r => `${String(r.email || '').trim().toLowerCase()}|${String(r.link || '').trim()}`;
+async function verifyLists(lists, getPage, cache = {}) {
+  const rows = lists.flat();
+  const known = rows.filter(r => cache[cacheKey(r)] === 'ok').map(r => ({ ...r, email: String(r.email).trim().toLowerCase() }));
+  const pending = rows.filter(r => cache[cacheKey(r)] !== 'ok').map(r => ({ ...r, _key: cacheKey(r) }));
+  const { ok, bad } = await verifyRows(pending, getPage);
+  const strip = ({ _key, ...r }) => r;
+  for (const r of ok) cache[r._key] = 'ok';
+  return { ok: [...known, ...ok.map(strip)], bad: bad.map(strip) };
+}
+const readCache = file => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; } };
+
 // Plain fetch first; if it fails or shows no email, render the page in headless Chrome (sites built with JS).
 function pageReader() {
   const cache = new Map();
@@ -203,16 +216,21 @@ function pageReader() {
   };
 }
 
-async function verificar(file, reader) {
-  const src = path.resolve(core.PATHS.root, file);
-  const rows = core.csvObjects(fs.readFileSync(src, 'utf8'), ['empresa', 'email', 'link']);
-  console.log(`Verificando ${rows.length} correos en sus páginas...`);
-  const { ok, bad } = await verifyRows(rows, reader.getPage);
-  const cols = Object.keys(rows[0] || { empresa: '', email: '', link: '' });
-  const dir = path.dirname(src);
-  core.writeCsv(path.join(dir, 'verificadas.csv'), [cols, ...ok.map(r => cols.map(c => r[c]))]);
-  core.writeCsv(path.join(dir, 'no_verificadas.csv'), [[...cols, 'motivo'], ...bad.map(r => [...cols.map(c => r[c]), r.motivo])]);
-  console.log(`✔ ${ok.length} de ${rows.length} verificadas → ${path.relative(core.PATHS.root, path.join(dir, 'verificadas.csv'))}`);
+// All the lists go into one verificadas.csv, so verifying a second list never drops the first one.
+async function verificar(files, reader) {
+  const srcs = files.map(f => path.resolve(core.PATHS.root, f));
+  const lists = srcs.map(src => core.csvObjects(fs.readFileSync(src, 'utf8'), ['empresa', 'email', 'link']));
+  const total = lists.flat().length;
+  const dir = path.dirname(srcs[0]);
+  const cacheFile = path.join(dir, 'verificacion.json');
+  const cache = readCache(cacheFile);
+  console.log(`Verificando ${total} correos de ${srcs.length} lista(s) en sus páginas...`);
+  const { ok, bad } = await verifyLists(lists, reader.getPage, cache);
+  fs.writeFileSync(cacheFile, JSON.stringify(cache));
+  const cols = [...new Set(lists.flat().flatMap(r => Object.keys(r)))];
+  core.writeCsv(path.join(dir, 'verificadas.csv'), [cols, ...ok.map(r => cols.map(c => r[c] ?? ''))]);
+  core.writeCsv(path.join(dir, 'no_verificadas.csv'), [[...cols, 'motivo'], ...bad.map(r => [...cols.map(c => r[c] ?? ''), r.motivo])]);
+  console.log(`✔ ${ok.length} de ${total} verificadas → ${path.relative(core.PATHS.root, path.join(dir, 'verificadas.csv'))}`);
   const counts = bad.reduce((m, r) => (m[r.motivo] = (m[r.motivo] || 0) + 1, m), {});
   for (const [m, n] of Object.entries(counts)) console.log(`  descartadas: ${n} · ${m}`);
 }
@@ -229,7 +247,7 @@ async function extraer(argv, reader) {
     .map(s => s.trim()).filter(s => /^https?:\/\//i.test(s) || /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(s))
     .map(s => (/^https?:/i.test(s) ? s : `https://${s}`));
   if (!urls.length) throw Error('Uso: npm run extraer -- https://empresa.com [otra.com ...] o un .txt con una URL por línea');
-  await pool(urls, 5, async url => {
+  await pool(urls, 8, async url => {
     let site;
     try { site = await crawl(url, reader.getPage); } catch { console.log(`✖ ${url} · no se pudo abrir`); return; }
     const seen = new Map();
@@ -247,6 +265,11 @@ async function extraer(argv, reader) {
     const all = [...existing, ...added];
     core.writeCsv(file, [LIST_COLS, ...all.map(r => LIST_COLS.map(c => r[c] || ''))]);
     fs.appendFileSync(path.join(path.dirname(file), 'sitios_vistos.txt'), urls.join('\n') + '\n');
+    // extraer read each added email on its page, so verificar does not need to open it again.
+    const cacheFile = path.join(path.dirname(file), 'verificacion.json');
+    const cache = readCache(cacheFile);
+    for (const r of added) cache[cacheKey(r)] = 'ok';
+    fs.writeFileSync(cacheFile, JSON.stringify(cache));
     const progress = path.join(path.dirname(file), 'progreso.csv');
     if (!fs.existsSync(progress)) fs.writeFileSync(progress, 'fecha,nuevas,total\n');
     fs.appendFileSync(progress, `${new Date().toISOString()},${added.length},${all.length}\n`);
@@ -275,10 +298,10 @@ async function main() {
   const reader = pageReader();
   try {
     if (first === '--extraer') await extraer(rest, reader);
-    else if (first) await verificar(first, reader);
+    else if (first) await verificar([first, ...rest], reader);
     else throw Error('Uso: npm run verificar -- empresas/tu_lista.csv');
   } finally { await reader.close(); }
 }
 
-module.exports = { extractEmails, decodeCfEmail, contactLinks, verifyRows, companyName, siteRow, addRows, estimate };
+module.exports = { extractEmails, decodeCfEmail, contactLinks, verifyRows, verifyLists, companyName, siteRow, addRows, estimate, verificar, pageReader };
 if (require.main === module) main().catch(e => { console.error('✖ ' + e.message); process.exitCode = 1; });

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { triage } = require('../src/limpiar');
+const { triage, domainsWithoutMx } = require('../src/limpiar');
 
 const r = (empresa, email, puesto = 'X') => ({ empresa, email, puesto });
 
@@ -30,4 +30,19 @@ test('triage only matches contacted public-mail addresses exactly, not the whole
   const { keep, drop } = triage([r('A', 'a@gmail.com'), r('B', 'b@gmail.com')], new Set(['a@gmail.com', 'gmail.com']), new Set());
   assert.deepStrictEqual(keep.map(x => x.empresa), ['B']);
   assert.strictEqual(drop[0].empresa, 'A');
+});
+
+test('domainsWithoutMx uses the cache, runs lookups in parallel and never drops a domain on a slow answer', async () => {
+  const asked = [];
+  const resolve = async d => {
+    asked.push(d);
+    if (d === 'slow.com') return new Promise(() => {});
+    if (d === 'dead.com') { const e = Error('x'); e.code = 'ENOTFOUND'; throw e; }
+    return [{ exchange: 'mx.' + d }];
+  };
+  const cache = { 'old.com': false };
+  const bad = await domainsWithoutMx(new Set(['old.com', 'ok.com', 'dead.com', 'slow.com']), cache, resolve, 50);
+  assert.deepStrictEqual([...bad].sort(), ['dead.com', 'old.com']);
+  assert.deepStrictEqual(asked.sort(), ['dead.com', 'ok.com', 'slow.com']);
+  assert.deepStrictEqual(cache, { 'old.com': false, 'ok.com': true, 'dead.com': false });
 });

@@ -139,12 +139,34 @@ class Ledger {
   save() { atomicWrite(this.file, this.data); }
 }
 
+// One account after another (stops at the first error), or all together: each one finishes and every error is reported.
+async function eachAccount(accounts, fn, parallel = false) {
+  if (!parallel) { for (const a of accounts) await fn(a); return; }
+  const results = await Promise.allSettled(accounts.map(a => fn(a)));
+  const errors = results.filter(r => r.status === 'rejected').map(r => r.reason.message);
+  if (errors.length) throw Error(errors.join('\n'));
+}
+
+// Company lists in empresas/ are the .csv files the kit did not generate itself.
+const isListFile = name => /\.csv$/i.test(name) && !/^(limpias|descartadas|verificadas|no_verificadas|progreso)\.csv$/i.test(name);
+
+// Free mail providers: many companies share them, so only the exact address counts as the same company.
+const PUBLIC = new Set(['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'live.com', 'icloud.com', 'yahoo.com.ar',
+  'hotmail.es', 'outlook.es', 'protonmail.com', 'gmx.com']);
+const alreadyContacted = (contacted, recipients) => recipients.some(e => {
+  const domain = e.split('@')[1];
+  return contacted.has(e) || (!PUBLIC.has(domain) && contacted.has(domain));
+});
+
 function preview(rows, pdfRoot, ledger) {
   const seen = new Set();
+  const contacted = ledger.contacted();
   return rows.map(row => {
     try {
       const app = validateRow(row, pdfRoot);
       let status = ledger.classify(app);
+      // A different application (other subject) to a company written to before: never write twice.
+      if (status === 'LISTO' && alreadyContacted(contacted, app.recipients)) status = 'YA CONTACTADA';
       if (seen.has(app.identity)) status = 'DUPLICADO EN EL CSV';
       seen.add(app.identity);
       return { row, app, status };
@@ -224,4 +246,4 @@ function lock(file, pid = process.pid, alive = isAlive) {
 }
 
 module.exports = { PATHS, COLUMNS, MAX_SCHEDULED, sha, parseCsv, toCsv, csvObjects, writeCsv, cleanBody, validateRow,
-  Ledger, preview, assign, parseWhen, readJson, loadAccounts, atomicWrite, beep, EMAIL, attachmentName, lock, running, hhmm };
+  Ledger, preview, assign, parseWhen, readJson, loadAccounts, atomicWrite, beep, EMAIL, attachmentName, lock, running, hhmm, PUBLIC, alreadyContacted, isListFile, eachAccount };

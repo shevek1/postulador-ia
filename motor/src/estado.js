@@ -6,7 +6,6 @@ const path = require('path');
 const core = require('./core');
 const { findChrome } = require('./browser');
 
-const OUTPUTS = /^(limpias|descartadas|verificadas|no_verificadas|progreso)\.csv$/i;
 const NOT_CV = /^(\.gitkeep|respuestas\.md|perfil\.json|foto\.(jpe?g|png)|cvs_mejorados)$/i;
 
 // files: names inside mi_perfil/ and empresas/, plus whether cuentas.json has accounts.
@@ -17,7 +16,7 @@ function progress({ perfil, cuentas, empresas }) {
     { label: 'Cuestionario', next: '/cuestionario', done: has('respuestas.md') },
     { label: 'CV mejorado', next: '/mejorar-cv', done: has('perfil.json') },
     { label: 'Gmail', next: '/conectar-gmail', done: cuentas },
-    { label: 'Empresas', next: '/buscar-empresas', done: empresas.some(f => /\.csv$/i.test(f) && !OUTPUTS.test(f)) },
+    { label: 'Empresas', next: '/buscar-empresas', done: empresas.some(core.isListFile) },
     { label: 'Programar', next: '/programar', done: false },
   ];
   const current = steps.findIndex(s => !s.done);

@@ -1,4 +1,4 @@
-// Usage: npm run programar -- --fecha 22/10/2026 --hora 09:00 [--cuentas cuenta1,cuenta2] [--csv ruta] [--pdfs ruta]
+// Usage: npm run programar -- --fecha 22/10/2026 --hora 09:00 [--cuentas cuenta1,cuenta2] [--paralelo] [--csv ruta] [--pdfs ruta]
 //        npm run revisar   -- --fecha 22/10/2026 --hora 09:00   (shows the plan, touches nothing)
 // Splits the ready rows across accounts (max 100 scheduled per account) and schedules them in Gmail.
 const path = require('path');
@@ -16,6 +16,7 @@ function args(argv) {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--revisar') out.revisar = true;
     else if (argv[i] === '--en-curso') out.enCurso = true;
+    else if (argv[i] === '--paralelo') out.paralelo = true;
     else if (argv[i].startsWith('--')) out[argv[i].slice(2)] = argv[++i];
   }
   return out;
@@ -89,11 +90,14 @@ async function main() {
   const rows = core.csvObjects(fs.readFileSync(csvFile, 'utf8'), core.COLUMNS);
   const items = core.preview(rows, pdfDir, ledger);
   const by = s => items.filter(i => i.status.startsWith(s));
-  const problems = items.filter(i => !['LISTO', 'YA PROGRAMADO'].includes(i.status));
+  const problems = items.filter(i => !['LISTO', 'YA PROGRAMADO', 'YA CONTACTADA'].includes(i.status));
   for (const p of problems) console.log(`  ✖ fila ${p.row.N} ${p.row.Empresa}: ${p.status}`);
+  const skipped = by('YA CONTACTADA');
+  if (skipped.length) console.log(`  Se saltean ${skipped.length} empresas a las que ya les escribiste: ${skipped.map(i => i.row.Empresa).join(', ')}`);
   const ready = by('LISTO').map(i => ({ ...i.app, when, attachName: core.attachmentName(nombre, i.row.Puesto) }));
   const { byAccount, leftover } = core.assign(ready, accounts.map(c => c.alias), ledger, Date.now());
-  console.log(`\nFilas: ${items.length} · listas: ${ready.length} · ya programadas: ${by('YA PROGRAMADO').length} · con problemas: ${problems.length}`);
+  console.log(`\nFilas: ${items.length} · listas: ${ready.length} · ya programadas: ${by('YA PROGRAMADO').length} · ` +
+    `ya contactadas: ${skipped.length} · con problemas: ${problems.length}`);
   console.log(`Envío: ${when.replace('T', ' ')} (hora de esta computadora)`);
   for (const acc of accounts) {
     const n = byAccount.get(acc.alias).length;
@@ -103,10 +107,9 @@ async function main() {
     'cuando salgan, vuelve a correr el mismo comando con otra fecha y sigue desde donde quedó.');
   if (problems.length) throw Error('Corrige las filas con problemas antes de programar (o quítalas del CSV).');
   if (a.revisar) return console.log('\nModo revisar: no se programó nada.');
-  for (const acc of accounts) {
-    const apps = byAccount.get(acc.alias);
-    if (apps.length) await runAccount(acc, apps, ledger);
-  }
+  // --paralelo opens one Chrome per account at the same time: faster, but needs more memory.
+  const busy = accounts.filter(acc => byAccount.get(acc.alias).length);
+  await core.eachAccount(busy, acc => runAccount(acc, byAccount.get(acc.alias), ledger), a.paralelo && busy.length > 1);
   const done = ready.filter(x => ledger.classify(x) === 'YA PROGRAMADO').length;
   console.log(`\n✔ Listo: ${done} postulaciones programadas. Revísalas en Gmail → Programados.`);
   core.beep();

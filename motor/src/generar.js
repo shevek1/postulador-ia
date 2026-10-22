@@ -37,6 +37,9 @@ async function main() {
   core.writeCsv(path.join(core.PATHS.salida, 'envio.csv'),
     [core.COLUMNS, ...specs.map(s => [s.n, s.empresa, s.puesto, s.email, s.file, s.asunto, s.mensaje])]);
   console.log(`✔ ${specs.length} CVs en salida/cvs y la lista de envío en salida/envio.csv`);
+  // Three samples (first, middle, last) so they can be reviewed without opening the CSV.
+  const samples = [...new Set([0, Math.floor(specs.length / 2), specs.length - 1])].map(i => specs[i]);
+  for (const s of samples) console.log(`\n── Ejemplo ${s.n} · ${s.empresa} · ${s.email}\nAsunto: ${s.asunto}\n\n${s.mensaje}`);
   if (long.length) {
     console.log(`⚠ Estos CVs ocupan más de 1 página: ${long.map(s => s.file).join(', ')}`);
     console.log('  Acorta el perfil o quita algún punto en perfil.json y vuelve a generar.');

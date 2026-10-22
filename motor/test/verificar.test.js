@@ -124,3 +124,18 @@ test('companyName decodes HTML entities and repairs mojibake in titles', () => {
   const broken = 'L' + String.fromCharCode(0xc3, 0x84) + 'BERIT', fixed = 'L' + String.fromCharCode(0xc4) + 'BERIT';
   assert.strictEqual(v.companyName(broken, 'https://laberit.com'), fixed);
 });
+
+test('verifyLists merges several lists and skips rows already verified', async () => {
+  const opened = [];
+  const getPage = async url => { opened.push(url); return url.includes('a.com') ? 'escribinos a cv@a.com' : 'nada'; };
+  const lists = [
+    [{ empresa: 'A', email: 'cv@a.com', link: 'https://a.com' }],
+    [{ empresa: 'B', email: 'rrhh@b.com', link: 'https://b.com' }, { empresa: 'C', email: 'hola@c.com', link: 'https://c.com' }],
+  ];
+  const cache = { 'hola@c.com|https://c.com': 'ok' };
+  const { ok, bad } = await v.verifyLists(lists, getPage, cache);
+  assert.deepStrictEqual(ok.map(r => r.empresa).sort(), ['A', 'C']);
+  assert.deepStrictEqual(bad.map(r => r.empresa), ['B']);
+  assert.deepStrictEqual(opened.sort(), ['https://a.com', 'https://b.com']);
+  assert.strictEqual(cache['cv@a.com|https://a.com'], 'ok');
+});

@@ -127,3 +127,28 @@ test('lock allows one programar at a time and ignores a lock left by a dead proc
   assert.strictEqual(fs.existsSync(file), false);
   release();
 });
+
+test('preview marks a new application to an already contacted company as YA CONTACTADA', () => {
+  const dir = tmp();
+  const ledger = new core.Ledger(path.join(dir, 'historial.json'));
+  const first = core.validateRow(row({ 'Email destino': 'rrhh@acme.com', Asunto: 'CV para Dev' }), dir);
+  ledger.record(first, 'completed', '2026-10-22T09:00', 'cuenta1');
+  const items = core.preview([
+    row({ N: '1', 'Email destino': 'rrhh@acme.com', Asunto: 'CV para Dev' }),
+    row({ N: '2', 'Email destino': 'jobs@acme.com', Asunto: 'CV para QA' }),
+    row({ N: '3', 'Email destino': 'otra@gmail.com', Asunto: 'CV para QA' }),
+    row({ N: '4', 'Email destino': 'cv@beta.com', Asunto: 'CV para QA' }),
+  ], dir, ledger);
+  assert.deepStrictEqual(items.map(i => i.status), ['YA PROGRAMADO', 'YA CONTACTADA', 'LISTO', 'LISTO']);
+});
+
+test('eachAccount runs accounts one after another, or together with parallel, and reports every failure', async () => {
+  const log = [];
+  const work = async (name, ms, fail) => { log.push('start ' + name); await new Promise(r => setTimeout(r, ms)); log.push('end ' + name); if (fail) throw Error(name + ' falló'); };
+  await core.eachAccount(['a', 'b'], n => work(n, n === 'a' ? 20 : 5), false);
+  assert.deepStrictEqual(log.splice(0), ['start a', 'end a', 'start b', 'end b']);
+  await core.eachAccount(['a', 'b'], n => work(n, n === 'a' ? 20 : 5), true);
+  assert.deepStrictEqual(log.splice(0), ['start a', 'start b', 'end b', 'end a']);
+  await assert.rejects(core.eachAccount(['a', 'b'], n => work(n, 5, true), true), /a falló.*b falló/s);
+  assert.deepStrictEqual(log.filter(l => l.startsWith('end')), ['end a', 'end b']);
+});
