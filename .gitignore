@@ -15,3 +15,6 @@ node_modules/
 odd/
 *.log
 .DS_Store
+
+# Session notes saved by Claude (personal)
+.claude/memoria/
